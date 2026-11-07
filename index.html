@@ -115,6 +115,18 @@ tr.click:hover{background:var(--plbg)}
 .tt{background:var(--plbg);color:var(--c);border:1px solid var(--bd);font-weight:600}
 button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
 .tb:has(input:checked){background:var(--plbg)}
+#fc{position:fixed;z-index:20;left:50%;top:50%;transform:translate(-50%,-50%);width:min(760px,calc(100% - 24px));max-height:calc(100% - 40px);overflow:auto;display:none;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+#fc.open{display:block}
+#bd{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:19;display:none}
+#bd.open{display:block}
+#nw{background:#fff;color:#16294a;font:inherit;font-weight:600;padding:7px 16px;border:0;border-radius:8px;cursor:pointer}
+#nw:hover{background:#e9eef9}
+.sub.ol{box-shadow:inset 3px 0 0 var(--wr)}
+.old{font-size:11px;color:var(--wr);margin-top:3px}
+#tbs,#ebs{grid-template-columns:repeat(2,minmax(0,1fr))}
+#tbs .tb{min-width:0}
+#tbs .tb label{flex:none}
+@media(max-width:520px){#tbs,#ebs{grid-template-columns:1fr}}
 .fl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
 .fl input[data-f=q]{flex:1;min-width:200px}
 .fl .dl{flex-direction:row;align-items:center;gap:6px}
@@ -130,12 +142,12 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
 </head>
 <body>
 <div class="wrap">
-  <aside class="side"><h3>Sites</h3><div class="sl" id="sl"></div></aside>
+  <aside class="side"><h3>Sites <span style="font-weight:400">· เลือกได้หลายไซต์</span></h3><div class="sl" id="sl"></div></aside>
   <main class="main">
-    <div class="top"><h1>Patch &amp; Restore Tracker <span class="tag doing" id="ro" style="display:none;font-size:12px;vertical-align:middle">👁 ดูอย่างเดียว</span></h1><span class="mode"><span id="mode"></span> · <a href="#view" id="tg"></a></span></div>
+    <div class="top"><h1>Patch &amp; Restore Tracker <span class="tag doing" id="ro" style="display:none;font-size:12px;vertical-align:middle">👁 ดูอย่างเดียว</span></h1><div style="display:flex;align-items:center;gap:14px"><button type="button" id="nw">+ New</button><span class="mode"><span id="mode"></span> · <a href="#view" id="tg"></a></span></div></div>
     <div class="sum" id="sum"></div>
     <div class="card"><h2 id="ot">ภาพรวมแต่ละไซต์</h2><div class="scroll"><table id="ov"></table></div></div>
-    <div class="card" id="fc"><h2>บันทึกรายการใหม่</h2>
+    <div class="card" id="fc"><h2 style="display:flex;justify-content:space-between;align-items:center">บันทึกรายการใหม่<button type="button" class="x" id="fx" style="font-size:18px">✕</button></h2>
       <form id="f">
         <label>ไซต์<select id="fs" required></select></label>
         <div class="wide"><span class="mu" style="font-size:12px">ประเภทงาน (เลือกได้มากกว่า 1 อย่าง) และ version ของแต่ละอย่าง</span><div class="tbs" id="tbs"></div></div><div class="wide"><span class="mu" style="font-size:12px">สภาพแวดล้อมของ Patch (เลือกได้ทั้งสอง) — Restore data ไม่แยกสภาพแวดล้อม</span><div class="tbs" id="ebs" style="--c:var(--ac)"><div class="tb"><label><input type="checkbox" data-e="staging">Staging</label></div><div class="tb"><label><input type="checkbox" data-e="production" checked>Production</label></div></div></div>
@@ -153,10 +165,11 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
         <select data-f="e"><option value="">ทุกสภาพแวดล้อม</option><option value="staging">Staging</option><option value="production">Production</option></select>
         <select data-f="st"><option value="">ทุกสถานะ</option><option value="plan">วางแผน</option><option value="doing">กำลังทำ</option><option value="done">เสร็จแล้ว</option><option value="late">เลยกำหนด</option></select>
         <label class="dl">ตั้งแต่<input type="date" data-f="from"></label><label class="dl">ถึง<input type="date" data-f="to"></label>
+        <select data-f="o"><option value="">เรียงตามเวลาที่บันทึก</option><option value="date">เรียงตามวันที่ทำงาน</option></select>
         <button type="button" class="ghost" id="fr">ล้างตัวกรอง</button><span class="mu" id="rc"></span></div>
       <div class="scroll"><table id="hist"></table></div>
     </div>
-  </main>
+  </main><div id="bd"></div>
 </div>
 <script>
 const SITES=["AIH","ASPEN","COEO","CRA","MKT","PR9","RSU","THAMC","TCH","VMI","VTH","WIH"];
@@ -166,51 +179,61 @@ const ENVS=["staging","production"],EN={staging:"Staging",production:"Production
 const envOf=r=>r.type==="restore"?"":(r.env||"production");
 const SL=[];TYPES.forEach(t=>t==="restore"?SL.push([t,""]):ENVS.forEach(e=>SL.push([t,e])));
 const TY={web:"Patch Web",api:"Patch API",medcer:"Patch Medcer",restore:"Restore data"};
-let recs=[],sel="ALL",col=null;const F={q:"",t:"",e:"",st:"",from:"",to:""};
+let recs=[],sel=[],col=null,LM=false;const F={q:"",t:"",e:"",st:"",from:"",to:"",o:""};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fd=d=>{if(!d)return"-";const[y,m,x]=d.split("-");return x+"/"+m+"/"+y};
 const today=()=>new Date().toISOString().slice(0,10);
+const fi=r=>{if(!r.ins)return"-";const d=new Date(r.ins);if(isNaN(d))return"-";const p=n=>String(n).padStart(2,"0");return p(d.getDate())+"/"+p(d.getMonth()+1)+"/"+d.getFullYear()+" "+p(d.getHours())+":"+p(d.getMinutes())};
 $("fd").value=today();
-$("tbs").innerHTML=TYPES.map(t=>`<div class="tb t-${t}"><label><input type="checkbox" data-t="${t}">${TY[t]}</label>${t==="restore"?'<span class="mu" style="font-size:12px">ไม่ต้องใส่ version</span>':`<input class="tv" data-v="${t}" placeholder="version เช่น 5.2.1" disabled>`}</div>`).join("");
+$("tbs").innerHTML=TYPES.map(t=>`<div class="tb t-${t}"><label><input type="checkbox" data-t="${t}">${TY[t]}</label>${t==="restore"?'<span class="mu" style="font-size:12px">ไม่ต้องใส่ version</span>':`<input class="tv" data-v="${t}" placeholder="เช่น 5.2.1" disabled>`}</div>`).join("");
 document.addEventListener("change",e=>{const t=e.target.dataset&&e.target.dataset.t;if(!t)return;const v=document.querySelector('[data-v="'+t+'"]');if(!v)return;v.disabled=!e.target.checked;if(e.target.checked)v.focus()});
 $("fs").innerHTML=SITES.map(s=>`<option>${s}</option>`).join("");
 
-function msg(t){let b=$("toast");if(!b){b=document.createElement("div");b.id="toast";b.style.cssText="position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1b2430;color:#fff;padding:10px 16px;border-radius:10px;z-index:9;font-size:13px;max-width:90%";document.body.appendChild(b)}b.textContent=t;b.style.display="block";clearTimeout(b._t);b._t=setTimeout(()=>b.style.display="none",4000)}
+function msg(t){let b=$("toast");if(!b){b=document.createElement("div");b.id="toast";b.style.cssText="position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1b2430;color:#fff;padding:10px 16px;border-radius:10px;z-index:30;font-size:13px;max-width:90%";document.body.appendChild(b)}b.textContent=t;b.style.display="block";clearTimeout(b._t);b._t=setTimeout(()=>b.style.display="none",4000)}
 const ro=()=>location.hash==="#view";
 const COL=["var(--c-web)","var(--c-api)","var(--c-medcer)","var(--c-restore)","var(--wr)","var(--bad)"];
-const nd=s=>SL.filter(([t,e])=>latestDone(s,t,e)).length;
+const yr=String(new Date().getFullYear());
+const ry=r=>r.type==="restore"&&r.status==="done"&&String(r.date).slice(0,4)===yr;
+const vp=v=>String(v||"").replace(/^[^\d]*/,"").split(/[^\d]+/).filter(x=>x!=="").map(Number);
+const vcmp=(a,b)=>{const x=vp(a),y=vp(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0};
+const target=t=>recs.filter(r=>r.type===t&&r.version).reduce((m,r)=>!m||vcmp(r.version,m)>0?r.version:m,"");
+const onTarget=(s,t,e)=>{const g=target(t);return !!g&&recs.some(r=>r.site===s&&r.type===t&&r.status==="done"&&(!e||envOf(r)===e)&&vcmp(r.version,g)>=0)};
+const nd=s=>SL.filter(([t,e])=>t==="restore"?recs.some(r=>r.site===s&&ry(r)):onTarget(s,t,e)).length;
 const dotc=s=>nd(s)===SL.length?"g":nd(s)===0?"r":"y";
-const cls=(s,t,e)=>latestDone(s,t,e)?"dn":nextPlan(s,t,e)?"pn":"nn";
+const cls=(s,t,e)=>{const d=latestDone(s,t,e);if(!d)return nextPlan(s,t,e)?"pn":"nn";return (t==="restore"?ry(d):onTarget(s,t,e))?"dn":"ol"};
 function cell2(s,t){if(t==="restore")return `<div class="sub ${cls(s,t)}">${body(s,t)}</div>`;return ENVS.map(e=>`<div class="sub ${cls(s,t,e)}"><span class="env">${EN[e]}</span>${body(s,t,e)}</div>`).join("")}
-function body(s,t,e){const d=latestDone(s,t,e),n=nextPlan(s,t,e);return (d?cell(d):'<span class="none">ยังไม่เสร็จ</span>')+(n?`<div style="margin-top:4px;font-size:12px"><span class="mu">ถัดไป:</span> ${n.version?esc(n.version)+" · ":""}${fd(n.date)} <span class="tag ${n.status}">${ST[n.status]}</span></div>`:"")}
+function body(s,t,e){const d=latestDone(s,t,e),n=nextPlan(s,t,e);return (d?cell(d):'<span class="none">ยังไม่มีข้อมูล</span>')+(d&&t!=="restore"&&!onTarget(s,t,e)?`<div class="old">ไม่ใช่เวอร์ชันล่าสุด (${esc(target(t))})</div>`:"")+(d&&t==="restore"&&!ry(d)?`<div class="old">ยังไม่ได้ทำในปี ${yr}</div>`:"")+(n?`<div style="margin-top:4px;font-size:12px"><span class="mu">ถัดไป:</span> ${n.version?esc(n.version)+" · ":""}${fd(n.date)} <span class="tag ${n.status}">${ST[n.status]}</span></div>`:"")}
 function latestDone(site,type,env){return recs.filter(r=>r.site===site&&r.type===type&&(!env||envOf(r)===env)&&r.status==="done").sort((a,b)=>b.date.localeCompare(a.date))[0]}
 function nextPlan(site,type,env){return recs.filter(r=>r.site===site&&r.type===type&&(!env||envOf(r)===env)&&r.status!=="done").sort((a,b)=>a.date.localeCompare(b.date))[0]}
 function cell(r,planned){
   if(!r)return'<span class="none">-</span>';
   return`${r.version?`<b>${esc(r.version)}</b><br><span class="mu">${fd(r.date)}</span>`:`<b>${fd(r.date)}</b>`}${planned?` <span class="tag ${r.status}">${ST[r.status]}</span>`:""}`;
 }
-function render(){
-  $("fc").style.display=ro()?"none":"";$("ro").style.display=ro()?"":"none";$("tg").textContent=ro()?"โหมดแก้ไข":"ดูอย่างเดียว";$("tg").href=ro()?"#edit":"#view";
+function render(){if(LM)try{localStorage.setItem("ptr",JSON.stringify(recs))}catch(e){}
+  $("fc").style.display=ro()?"none":"";$("nw").style.display=ro()?"none":"";if(ro())nm(false);$("ro").style.display=ro()?"":"none";$("tg").textContent=ro()?"โหมดแก้ไข":"ดูอย่างเดียว";$("tg").href=ro()?"#edit":"#view";
   $("sl").innerHTML=[["ALL","ทั้งหมด",recs.length]].concat(SITES.map(s=>[s,s,recs.filter(r=>r.site===s).length]))
-    .map(([k,n,c])=>`<button class="si ${sel===k?"on":""}" data-s="${k}"><span>${k==="ALL"?"":`<span class="dot ${dotc(k)}"></span>`}${n}</span><span class="cnt">${c}</span></button>`).join("");
-  const VS=()=>sel==="ALL"?SITES:[sel];
+    .map(([k,n,c])=>`<button class="si ${(k==="ALL"?!sel.length:sel.includes(k))?"on":""}" data-s="${k}"><span>${k==="ALL"?"":`<span class="dot ${dotc(k)}"></span>`}${n}</span></button>`).join("");
+  const VS=()=>sel.length?SITES.filter(s=>sel.includes(s)):SITES;
+const sn=()=>sel.length>3?sel.length+" ไซต์":sel.join(", ");
 const cnt=(t,e)=>VS().filter(s=>latestDone(s,t,e)).length;
   const pend=recs.filter(r=>VS().includes(r.site)&&r.status!=="done").length;
   const late=recs.filter(r=>VS().includes(r.site)&&r.status!=="done"&&r.date<today()).length;
-  $("sum").innerHTML=TYPES.map(t=>t==="restore"?[TY[t]+" เสร็จแล้ว",cnt(t)+" / "+VS().length+" ไซต์"]:[TY[t]+" · Production",cnt(t,"production")+" / "+VS().length+" ไซต์","Staging "+cnt(t,"staging")+" / "+VS().length]).concat([["รอดำเนินการ",pend+" รายการ"],["เลยกำหนด",late+" รายการ"]])
-    .map(([l,v,x],i)=>{const p=String(v).split(" ");return `<div class="card sc" style="--c:${COL[i]}"><b${i===5&&+p[0]>0?' style="color:var(--bad)"':""}>${p[0]}<small> ${p.slice(1).join(" ")}</small></b><span>${l}</span>${x?`<em class="xs">${x}</em>`:""}${i<4?`<div class="bar"><i style="width:${cnt(TYPES[i],TYPES[i]==="restore"?"":"production")/VS().length*100}%"></i></div>`:""}</div>`}).join("");
+  $("sum").innerHTML=TYPES.map(t=>t==="restore"?["Restore data · ปี "+yr,VS().filter(s=>recs.some(r=>r.site===s&&ry(r))).length+" / "+VS().length+" ไซต์","รวม "+recs.filter(r=>VS().includes(r.site)&&ry(r)).length+" ครั้งในปีนี้"]:[TY[t]+" · Production",VS().filter(s=>onTarget(s,t,"production")).length+" / "+VS().length+" ไซต์",target(t)?"ล่าสุด "+target(t)+" · Staging "+VS().filter(s=>onTarget(s,t,"staging")).length+" / "+VS().length:"ยังไม่มีข้อมูล"]).concat([["รอดำเนินการ",pend+" รายการ"],["เลยกำหนด",late+" รายการ"]])
+    .map(([l,v,x],i)=>{const p=String(v).split(" ");return `<div class="card sc" style="--c:${COL[i]}"><b${i===5&&+p[0]>0?' style="color:var(--bad)"':""}>${p[0]}<small> ${p.slice(1).join(" ")}</small></b><span>${l}</span>${x?`<em class="xs">${x}</em>`:""}${i<4?`<div class="bar"><i style="width:${(TYPES[i]==="restore"?VS().filter(s=>recs.some(r=>r.site===s&&ry(r))).length:VS().filter(s=>onTarget(s,TYPES[i],"production")).length)/VS().length*100}%"></i></div>`:""}</div>`}).join("");
   $("ov").innerHTML=`<tr><th>ไซต์</th>${TYPES.map(t=>`<th class="tc t-${t}">${TY[t]}</th>`).join("")}</tr>`+
     VS().map(s=>`<tr class="click" data-s="${s}"><td><span class="dot ${dotc(s)}"></span><b>${s}</b> <span class="mu">${nd(s)}/${SL.length}</span></td>${TYPES.map(t=>`<td>${cell2(s,t)}</td>`).join("")}</tr>`).join("");
-  const list=recs.filter(r=>(sel==="ALL"||r.site===sel)&&(!F.t||r.type===F.t)&&(!F.e||envOf(r)===F.e)&&(!F.st||(F.st==="late"?(r.status!=="done"&&r.date<today()):r.status===F.st))&&(!F.from||r.date>=F.from)&&(!F.to||r.date<=F.to)&&(!F.q||[r.site,r.version,r.note,r.by].join(" ").toLowerCase().includes(F.q.toLowerCase()))).sort((a,b)=>b.date.localeCompare(a.date));
-  $("ht").textContent="ประวัติ"+(sel==="ALL"?"ทั้งหมด":" – "+sel);$("ot").textContent=sel==="ALL"?"ภาพรวมแต่ละไซต์":"ภาพรวม – "+sel;$("rc").textContent=list.length+" / "+recs.length+" รายการ";
-  $("hist").innerHTML=`<tr><th>วันที่</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>สถานะ</th><th>ผู้ดำเนินการ</th><th>หมายเหตุ</th><th></th></tr>`+
-    (list.length?list.map(r=>`<tr><td class="${r.status!=="done"&&r.date<today()?"od":""}">${fd(r.date)}</td><td><b>${esc(r.site)}</b></td><td><span class="tag tt t-${r.type}">${TY[r.type]}</span>${envOf(r)?` <span class="tag ev ${envOf(r)}">${EN[envOf(r)]}</span>`:""}</td><td>${r.version?`<b>${esc(r.version)}</b>`:'<span class="mu">-</span>'}</td>
+  const list=recs.filter(r=>(!sel.length||sel.includes(r.site))&&(!F.t||r.type===F.t)&&(!F.e||envOf(r)===F.e)&&(!F.st||(F.st==="late"?(r.status!=="done"&&r.date<today()):r.status===F.st))&&(!F.from||r.date>=F.from)&&(!F.to||r.date<=F.to)&&(!F.q||[r.site,r.version,r.note,r.by].join(" ").toLowerCase().includes(F.q.toLowerCase()))).sort((a,b)=>F.o==="date"?b.date.localeCompare(a.date)||String(b.ins||"").localeCompare(String(a.ins||"")):(a.ins&&b.ins)?b.ins.localeCompare(a.ins):a.ins?-1:b.ins?1:b.date.localeCompare(a.date));
+  $("ht").textContent="ประวัติ"+(sel.length?" – "+sn():"ทั้งหมด");$("ot").textContent=sel.length?"ภาพรวม – "+sn():"ภาพรวมแต่ละไซต์";$("rc").textContent=list.length+" / "+recs.length+" รายการ";
+  $("hist").innerHTML=`<tr><th>บันทึกเมื่อ</th><th>วันที่ทำงาน</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>สถานะ</th><th>ผู้ดำเนินการ</th><th>หมายเหตุ</th><th></th></tr>`+
+    (list.length?list.map(r=>`<tr><td class="mu" style="white-space:nowrap">${fi(r)}</td><td class="${r.status!=="done"&&r.date<today()?"od":""}">${fd(r.date)}</td><td><b>${esc(r.site)}</b></td><td><span class="tag tt t-${r.type}">${TY[r.type]}</span>${envOf(r)?` <span class="tag ev ${envOf(r)}">${EN[envOf(r)]}</span>`:""}</td><td>${r.version?`<b>${esc(r.version)}</b>`:'<span class="mu">-</span>'}</td>
     <td>${ro()?`<span class="tag ${r.status}">${ST[r.status]}</span>`:`<select class="st ${r.status}" data-id="${r.id}">${Object.keys(ST).map(k=>`<option value="${k}" ${r.status===k?"selected":""}>${ST[k]}</option>`).join("")}</select>`}</td>
-    <td>${esc(r.by)}</td><td>${esc(r.note)}</td><td>${ro()?"":`<button class="x" data-del="${r.id}">ลบ</button>`}</td></tr>`).join(""):`<tr><td colspan="8" class="none">ยังไม่มีรายการ</td></tr>`);
+    <td>${esc(r.by)}</td><td>${esc(r.note)}</td><td>${ro()?"":`<button class="x" data-del="${r.id}">ลบ</button>`}</td></tr>`).join(""):`<tr><td colspan="9" class="none">ยังไม่มีรายการ</td></tr>`);
 }
 document.addEventListener("click",e=>{
-  const s=e.target.closest("[data-s]");if(s){sel=s.dataset.s;if(sel!=="ALL")$("fs").value=sel;render();return}
+  const s=e.target.closest("[data-s]");if(s){const k=s.dataset.s;
+    if(k==="ALL")sel=[];else if(s.classList.contains("si"))sel=sel.includes(k)?sel.filter(x=>x!==k):sel.concat(k);else sel=[k];
+    sel=SITES.filter(x=>sel.includes(x));if(sel.length===1)$("fs").value=sel[0];render();return}
   const d=e.target.closest("[data-del]");
   if(d){const id=d.dataset.del;if(d.dataset.arm!=="1"){d.dataset.arm="1";d.textContent="ยืนยันลบ?";d.style.color="var(--bad)";d.style.fontWeight="600";setTimeout(()=>{d.dataset.arm="";d.textContent="ลบ";d.style.color="";d.style.fontWeight=""},3000);return}
     if(col)col.doc(id).delete().then(()=>msg("ลบรายการแล้ว")).catch(err=>msg("ลบไม่สำเร็จ: "+((err&&err.message)||err)));else{recs=recs.filter(r=>r.id!==id);render()}}
@@ -229,11 +252,14 @@ $("f").addEventListener("submit",e=>{
   if(picked.some(t=>t!=="restore")&&!envs.length){msg("กรุณาเลือก Staging หรือ Production อย่างน้อย 1 อย่าง");return}
   const rs=[];picked.forEach(t=>{const version=t==="restore"?"":document.querySelector('[data-v="'+t+'"]').value.trim();if(t==="restore")rs.push(Object.assign({type:t,version},base));else envs.forEach(e=>rs.push(Object.assign({type:t,env:e,version},base)))});
   if(rs.some(x=>x.type!=="restore"&&!x.version)){msg("กรุณากรอก version ให้ครบทุก Patch ที่เลือก");return}
-  rs.forEach((r,i)=>{if(col)col.add(r).catch(err=>msg("บันทึกไม่สำเร็จ: "+((err&&err.message)||err)));else{r.id="l"+Date.now()+i;recs.push(r)}});if(!col)render();
-  document.querySelectorAll("[data-t]").forEach(c=>c.checked=false);document.querySelectorAll("[data-v]").forEach(v=>{v.value="";v.disabled=true});$("fn").value="";
+  rs.forEach((r,i)=>{r.ins=new Date(Date.now()+i).toISOString();if(col)col.add(r).catch(err=>msg("บันทึกไม่สำเร็จ: "+((err&&err.message)||err)));else{r.id="l"+Date.now()+i;recs.push(r)}});if(!col)render();
+  document.querySelectorAll("[data-t]").forEach(c=>c.checked=false);document.querySelectorAll("[data-v]").forEach(v=>{v.value="";v.disabled=true});$("fn").value="";nm(false);msg("บันทึกแล้ว "+rs.length+" รายการ");
 });
 $("mode").textContent="กำลังเชื่อมต่อ…";
+function nm(o){$("fc").classList.toggle("open",o);$("bd").classList.toggle("open",o)}
 addEventListener("hashchange",render);
+$("nw").addEventListener("click",()=>nm(true));$("fx").addEventListener("click",()=>nm(false));$("bd").addEventListener("click",()=>nm(false));
+addEventListener("keydown",e=>{if(e.key==="Escape")nm(false)});
 document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.f;if(!k)return;F[k]=e.target.value;render()});
 $("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");document.querySelectorAll("[data-f]").forEach(i=>i.value="");render()});
 (async()=>{
@@ -245,7 +271,7 @@ $("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");documen
       return;
     }
   }catch(e){}
-  col=null;$("mode").textContent="โหมดทดลอง: ข้อมูลไม่ถูกเก็บถาวร (ต้องเข้าสู่ระบบ)";render();
+  col=null;LM=true;try{recs=JSON.parse(localStorage.getItem("ptr")||"[]")}catch(e){}$("mode").textContent="เก็บข้อมูลในเบราว์เซอร์นี้เท่านั้น";render();
 })();
 render();
 </script>
