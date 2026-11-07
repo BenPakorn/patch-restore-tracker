@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Patch & Restore Tracker</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b2430;--mu:#6b7683;--bd:#e3e7ec;--ac:#2563eb;--acbg:#e8f0fe;--ok:#15803d;--okbg:#dcfce7;--wr:#b45309;--wrbg:#fef3c7;--pl:#475569;--plbg:#eef1f5;--rs:#7c3aed;--rsbg:#f0e9ff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--card:#1a2029;--tx:#e6eaf0;--mu:#97a2b0;--bd:#2b3340;--ac:#6ea0ff;--acbg:#1f2e4d;--ok:#6ee7a0;--okbg:#163524;--wr:#fbbf24;--wrbg:#3a2d0f;--pl:#b6c0cc;--plbg:#262e3a;--rs:#c4a5ff;--rsbg:#2e2347;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161c;--card:#1a2029;--tx:#e6eaf0;--mu:#97a2b0;--bd:#2b3340;--ac:#6ea0ff;--acbg:#1f2e4d;--ok:#6ee7a0;--okbg:#163524;--wr:#fbbf24;--wrbg:#3a2d0f;--pl:#b6c0cc;--plbg:#262e3a;--rs:#c4a5ff;--rsbg:#2e2347;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 "Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{display:grid;grid-template-columns:220px 1fr;gap:16px;max-width:1200px;margin:0 auto;padding:16px}
+@media(max-width:760px){.wrap{grid-template-columns:1fr}}
+.side,.card{background:var(--card);border:1px solid var(--bd);border-radius:12px}
+.side{padding:12px;align-self:start}
+.side h3{margin:0 0 8px;font-size:13px;color:var(--mu);font-weight:600}
+.sl{display:flex;flex-direction:column;gap:2px}
+@media(max-width:760px){.sl{flex-direction:row;flex-wrap:wrap;gap:6px}}
+.si{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid transparent;background:none;color:var(--tx);cursor:pointer;font:inherit;text-align:left}
+.si:hover{background:var(--plbg)}
+.si.on{background:var(--acbg);border-color:var(--ac);font-weight:600}
+.cnt{font-size:12px;background:var(--plbg);color:var(--mu);border-radius:10px;padding:0 8px}
+.main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+h1{margin:0;font-size:20px}
+.mode{font-size:12px;color:var(--mu)}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.sc{padding:12px 14px}
+.sc b{display:block;font-size:24px}
+.sc span{color:var(--mu);font-size:12px}
+.card{padding:14px;min-width:0}
+.card h2{margin:0 0 10px;font-size:15px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:820px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--bd);vertical-align:top}
+th{font-size:12px;color:var(--mu);font-weight:600}
+tr.click{cursor:pointer}tr.click:hover{background:var(--plbg)}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;white-space:nowrap}
+.done{background:var(--okbg);color:var(--ok)}.doing{background:var(--wrbg);color:var(--wr)}.plan{background:var(--plbg);color:var(--pl)}
+.pt{background:var(--acbg);color:var(--ac)}.rs{background:var(--rsbg);color:var(--rs)}
+.mu{color:var(--mu)}.none{color:var(--mu);font-size:12px}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mu)}
+input,select,button.pri{font:inherit;padding:7px 9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);min-width:0}
+button.pri{background:var(--ac);color:#fff;border-color:var(--ac);cursor:pointer;font-weight:600}
+button.x{background:none;border:none;color:var(--mu);cursor:pointer;font-size:13px}
+button.x:hover{color:#dc2626}
+select.st{padding:2px 6px;font-size:12px}
+.wide{grid-column:1/-1}
+.tbs{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin-top:4px}
+.tb{display:flex;gap:8px;align-items:center;border:1px solid var(--bd);border-radius:8px;padding:6px 8px}
+.tb label{flex-direction:row;align-items:center;gap:6px;color:var(--tx);font-size:13px;white-space:nowrap}
+.tb input[type=checkbox]{padding:0;width:auto}
+.tb .tv{flex:1;width:100%;min-width:0}
+:root{--c-web:#2563eb;--c-api:#0d9488;--c-medcer:#db2777;--c-restore:#7c3aed;--bad:#dc2626}
+.t-web{--c:var(--c-web)}.t-api{--c:var(--c-api)}.t-medcer{--c:var(--c-medcer)}.t-restore{--c:var(--c-restore)}
+th.tc{color:var(--c);border-bottom:3px solid var(--c);font-size:13px}
+td.dn{background:color-mix(in srgb,var(--ok) 14%,transparent)}
+td.pn{background:color-mix(in srgb,var(--wr) 14%,transparent)}
+td.nn{background:color-mix(in srgb,var(--bad) 9%,transparent)}
+td.nn .none{color:var(--bad);font-weight:600}
+.tt{background:color-mix(in srgb,var(--c) 16%,transparent);color:var(--c);font-weight:600}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.dot.g{background:var(--ok)}.dot.y{background:var(--wr)}.dot.r{background:var(--bad)}
+.od{color:var(--bad);font-weight:600}
+.sc b{font-size:26px}
+a{color:var(--ac);text-decoration:none}a:hover{text-decoration:underline}
+select.st.done,select.st.doing,select.st.plan{font-weight:600}
+:root{--bg:#f2f4fa;--bd:#e4e8f1;--ac:#4f46e5;--acbg:#eceeff;--ok:#059669;--okbg:#d1fae5;--wr:#d97706;--wrbg:#fef3c7;--plbg:#eef1f8;--pl:#5b6678;--bad:#e11d48;--c-web:#3b82f6;--c-api:#0d9488;--c-medcer:#ec4899;--c-restore:#8b5cf6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--c-web:#7fb0ff;--c-api:#2dd4bf;--c-medcer:#f68ac0;--c-restore:#b79cff;--bad:#fb7185}}
+:root[data-theme="dark"]{--c-web:#7fb0ff;--c-api:#2dd4bf;--c-medcer:#f68ac0;--c-restore:#b79cff;--bad:#fb7185}
+.side,.card{box-shadow:0 1px 2px rgba(20,30,60,.05),0 6px 18px rgba(20,30,60,.05);border-radius:14px}
+.top{background:linear-gradient(120deg,#4f46e5,#8b5cf6);color:#fff;padding:16px 20px;border-radius:14px;box-shadow:0 6px 18px rgba(79,70,229,.25)}
+.top h1{color:#fff;font-size:21px}.top .mode,.top .mode a{color:#fff;opacity:.92}
+.si.on{background:linear-gradient(90deg,var(--acbg),transparent);border-color:var(--ac);color:var(--ac)}
+.sc{position:relative;overflow:hidden;padding:14px 16px 14px 20px}
+.sc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--c)}
+.sc b{color:var(--c)}
+.bar{height:6px;background:var(--plbg);border-radius:4px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--c);border-radius:4px}
+th.tc{background:color-mix(in srgb,var(--c) 12%,transparent);border-bottom:0;border-top:3px solid var(--c);color:var(--c)}
+td.dn{background:color-mix(in srgb,var(--ok) 11%,transparent);box-shadow:inset 3px 0 0 var(--ok)}
+td.pn{background:color-mix(in srgb,var(--wr) 12%,transparent);box-shadow:inset 3px 0 0 var(--wr)}
+td.nn{background:color-mix(in srgb,var(--bad) 6%,transparent);box-shadow:inset 3px 0 0 color-mix(in srgb,var(--bad) 50%,transparent)}
+td.nn .none{color:var(--bad);font-weight:500}
+.tt{border:1px solid color-mix(in srgb,var(--c) 35%,transparent)}
+.tb{transition:.15s}.tb:has(input:checked){border-color:var(--c);background:color-mix(in srgb,var(--c) 10%,transparent)}
+button.pri{background:linear-gradient(120deg,#4f46e5,#8b5cf6);border:0;color:#fff;padding:9px 14px}
+:root{--bg:#f4f6f9;--bd:#dde3ea;--tx:#1f2933;--mu:#697586;--ac:#1e3a8a;--acbg:#e9eef9;--ok:#15803d;--okbg:#e3f4ea;--wr:#a16207;--wrbg:#fbf1d9;--plbg:#eef1f5;--pl:#52606d;--bad:#b42318;--c-web:#3b6ea5;--c-api:#2a8a84;--c-medcer:#9b5a8a;--c-restore:#6c7a89}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--c-web:#8fb4e3;--c-api:#6cc5bd;--c-medcer:#d09ac4;--c-restore:#a5b1bf;--bad:#f0867b}}
+:root[data-theme="dark"]{--c-web:#8fb4e3;--c-api:#6cc5bd;--c-medcer:#d09ac4;--c-restore:#a5b1bf;--bad:#f0867b}
+.side,.card{border-radius:10px;box-shadow:0 1px 2px rgba(16,24,40,.05)}
+.top{background:#16294a;box-shadow:none;border-radius:10px;padding:14px 20px}
+.top h1{font-size:18px;font-weight:600;letter-spacing:.2px}
+.card h2{font-size:14px;font-weight:600}
+.sum{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+@media(max-width:1180px){.sum{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.sc{padding:12px 14px}.sc::before{display:none}
+.sc b{font-size:24px;font-weight:700;color:var(--tx);white-space:nowrap}
+.sc b small{font-size:12px;font-weight:500;color:var(--mu)}
+.sc span{font-size:12px}
+.bar{height:4px}.bar i{background:var(--c)}
+.si.on{background:var(--acbg);border-color:transparent;box-shadow:inset 3px 0 0 var(--ac);color:var(--ac)}
+.dot.r{background:#c3cad4}
+th{background:var(--plbg);color:var(--pl)}
+th.tc{background:var(--plbg);border-top:0;border-bottom:2px solid var(--c);color:var(--tx)}
+td.dn,td.pn,td.nn{background:none}
+td.dn{box-shadow:inset 3px 0 0 var(--ok)}
+td.pn{box-shadow:inset 3px 0 0 var(--wr)}
+td.nn{box-shadow:none}
+td.nn .none{color:var(--mu);font-weight:400}
+tr.click:hover{background:var(--plbg)}
+.tt{background:var(--plbg);color:var(--c);border:1px solid var(--bd);font-weight:600}
+button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
+.tb:has(input:checked){background:var(--plbg)}
+.fl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
+.fl input[data-f=q]{flex:1;min-width:200px}
+.fl .dl{flex-direction:row;align-items:center;gap:6px}
+.ghost{font:inherit;padding:7px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--pl);cursor:pointer}.ghost:hover{background:var(--plbg)}
+.sub{padding:6px 8px;border-radius:6px;margin:3px 0;background:color-mix(in srgb,var(--plbg) 55%,transparent)}
+.sub.dn{box-shadow:inset 3px 0 0 var(--ok)}.sub.pn{box-shadow:inset 3px 0 0 var(--wr)}
+.sub .none{color:var(--mu);font-weight:400}
+.env{display:block;font-size:11px;font-weight:600;letter-spacing:.4px;color:var(--mu);text-transform:uppercase;margin-bottom:1px}
+.xs{display:block;font-style:normal;font-size:11px;color:var(--mu);margin-top:2px}
+.ev{border:1px solid var(--bd);color:var(--pl)}
+.ev.production{background:var(--ac);color:var(--card);border-color:var(--ac)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside class="side"><h3>Sites</h3><div class="sl" id="sl"></div></aside>
+  <main class="main">
+    <div class="top"><h1>Patch &amp; Restore Tracker <span class="tag doing" id="ro" style="display:none;font-size:12px;vertical-align:middle">👁 ดูอย่างเดียว</span></h1><span class="mode"><span id="mode"></span> · <a href="#view" id="tg"></a></span></div>
+    <div class="sum" id="sum"></div>
+    <div class="card"><h2 id="ot">ภาพรวมแต่ละไซต์</h2><div class="scroll"><table id="ov"></table></div></div>
+    <div class="card" id="fc"><h2>บันทึกรายการใหม่</h2>
+      <form id="f">
+        <label>ไซต์<select id="fs" required></select></label>
+        <div class="wide"><span class="mu" style="font-size:12px">ประเภทงาน (เลือกได้มากกว่า 1 อย่าง) และ version ของแต่ละอย่าง</span><div class="tbs" id="tbs"></div></div><div class="wide"><span class="mu" style="font-size:12px">สภาพแวดล้อมของ Patch (เลือกได้ทั้งสอง) — Restore data ไม่แยกสภาพแวดล้อม</span><div class="tbs" id="ebs" style="--c:var(--ac)"><div class="tb"><label><input type="checkbox" data-e="staging">Staging</label></div><div class="tb"><label><input type="checkbox" data-e="production" checked>Production</label></div></div></div>
+        
+        <label>วันที่<input id="fd" type="date" required></label>
+        <label>สถานะ<select id="fst"><option value="plan">วางแผน</option><option value="doing">กำลังทำ</option><option value="done">เสร็จแล้ว</option></select></label>
+        <label>ผู้ดำเนินการ<input id="fb" placeholder="ชื่อ/ทีม"></label>
+        <label class="wide">หมายเหตุ<input id="fn" placeholder="เช่น restore จาก backup วันที่…, ปัญหาที่พบ"></label>
+        <button class="pri" type="submit">บันทึก</button>
+      </form>
+    </div>
+    <div class="card"><h2 id="ht">ประวัติทั้งหมด</h2>
+      <div class="fl"><input data-f="q" placeholder="ค้นหา version / หมายเหตุ / ผู้ดำเนินการ">
+        <select data-f="t"><option value="">ทุกประเภท</option><option value="web">Patch Web</option><option value="api">Patch API</option><option value="medcer">Patch Medcer</option><option value="restore">Restore data</option></select>
+        <select data-f="e"><option value="">ทุกสภาพแวดล้อม</option><option value="staging">Staging</option><option value="production">Production</option></select>
+        <select data-f="st"><option value="">ทุกสถานะ</option><option value="plan">วางแผน</option><option value="doing">กำลังทำ</option><option value="done">เสร็จแล้ว</option><option value="late">เลยกำหนด</option></select>
+        <label class="dl">ตั้งแต่<input type="date" data-f="from"></label><label class="dl">ถึง<input type="date" data-f="to"></label>
+        <button type="button" class="ghost" id="fr">ล้างตัวกรอง</button><span class="mu" id="rc"></span></div>
+      <div class="scroll"><table id="hist"></table></div>
+    </div>
+  </main>
+</div>
+<script>
+const SITES=["AIH","ASPEN","COEO","CRA","MKT","PR9","RSU","THAMC","TCH","VMI","VTH","WIH"];
+const ST={plan:"วางแผน",doing:"กำลังทำ",done:"เสร็จแล้ว"};
+const TYPES=["web","api","medcer","restore"];
+const ENVS=["staging","production"],EN={staging:"Staging",production:"Production"};
+const envOf=r=>r.type==="restore"?"":(r.env||"production");
+const SL=[];TYPES.forEach(t=>t==="restore"?SL.push([t,""]):ENVS.forEach(e=>SL.push([t,e])));
+const TY={web:"Patch Web",api:"Patch API",medcer:"Patch Medcer",restore:"Restore data"};
+let recs=[],sel="ALL",col=null;const F={q:"",t:"",e:"",st:"",from:"",to:""};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fd=d=>{if(!d)return"-";const[y,m,x]=d.split("-");return x+"/"+m+"/"+y};
+const today=()=>new Date().toISOString().slice(0,10);
+$("fd").value=today();
+$("tbs").innerHTML=TYPES.map(t=>`<div class="tb t-${t}"><label><input type="checkbox" data-t="${t}">${TY[t]}</label>${t==="restore"?'<span class="mu" style="font-size:12px">ไม่ต้องใส่ version</span>':`<input class="tv" data-v="${t}" placeholder="version เช่น 5.2.1" disabled>`}</div>`).join("");
+document.addEventListener("change",e=>{const t=e.target.dataset&&e.target.dataset.t;if(!t)return;const v=document.querySelector('[data-v="'+t+'"]');if(!v)return;v.disabled=!e.target.checked;if(e.target.checked)v.focus()});
+$("fs").innerHTML=SITES.map(s=>`<option>${s}</option>`).join("");
+
+function msg(t){let b=$("toast");if(!b){b=document.createElement("div");b.id="toast";b.style.cssText="position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1b2430;color:#fff;padding:10px 16px;border-radius:10px;z-index:9;font-size:13px;max-width:90%";document.body.appendChild(b)}b.textContent=t;b.style.display="block";clearTimeout(b._t);b._t=setTimeout(()=>b.style.display="none",4000)}
+const ro=()=>location.hash==="#view";
+const COL=["var(--c-web)","var(--c-api)","var(--c-medcer)","var(--c-restore)","var(--wr)","var(--bad)"];
+const nd=s=>SL.filter(([t,e])=>latestDone(s,t,e)).length;
+const dotc=s=>nd(s)===SL.length?"g":nd(s)===0?"r":"y";
+const cls=(s,t,e)=>latestDone(s,t,e)?"dn":nextPlan(s,t,e)?"pn":"nn";
+function cell2(s,t){if(t==="restore")return `<div class="sub ${cls(s,t)}">${body(s,t)}</div>`;return ENVS.map(e=>`<div class="sub ${cls(s,t,e)}"><span class="env">${EN[e]}</span>${body(s,t,e)}</div>`).join("")}
+function body(s,t,e){const d=latestDone(s,t,e),n=nextPlan(s,t,e);return (d?cell(d):'<span class="none">ยังไม่เสร็จ</span>')+(n?`<div style="margin-top:4px;font-size:12px"><span class="mu">ถัดไป:</span> ${n.version?esc(n.version)+" · ":""}${fd(n.date)} <span class="tag ${n.status}">${ST[n.status]}</span></div>`:"")}
+function latestDone(site,type,env){return recs.filter(r=>r.site===site&&r.type===type&&(!env||envOf(r)===env)&&r.status==="done").sort((a,b)=>b.date.localeCompare(a.date))[0]}
+function nextPlan(site,type,env){return recs.filter(r=>r.site===site&&r.type===type&&(!env||envOf(r)===env)&&r.status!=="done").sort((a,b)=>a.date.localeCompare(b.date))[0]}
+function cell(r,planned){
+  if(!r)return'<span class="none">-</span>';
+  return`${r.version?`<b>${esc(r.version)}</b><br><span class="mu">${fd(r.date)}</span>`:`<b>${fd(r.date)}</b>`}${planned?` <span class="tag ${r.status}">${ST[r.status]}</span>`:""}`;
+}
+function render(){
+  $("fc").style.display=ro()?"none":"";$("ro").style.display=ro()?"":"none";$("tg").textContent=ro()?"โหมดแก้ไข":"ดูอย่างเดียว";$("tg").href=ro()?"#edit":"#view";
+  $("sl").innerHTML=[["ALL","ทั้งหมด",recs.length]].concat(SITES.map(s=>[s,s,recs.filter(r=>r.site===s).length]))
+    .map(([k,n,c])=>`<button class="si ${sel===k?"on":""}" data-s="${k}"><span>${k==="ALL"?"":`<span class="dot ${dotc(k)}"></span>`}${n}</span><span class="cnt">${c}</span></button>`).join("");
+  const VS=()=>sel==="ALL"?SITES:[sel];
+const cnt=(t,e)=>VS().filter(s=>latestDone(s,t,e)).length;
+  const pend=recs.filter(r=>VS().includes(r.site)&&r.status!=="done").length;
+  const late=recs.filter(r=>VS().includes(r.site)&&r.status!=="done"&&r.date<today()).length;
+  $("sum").innerHTML=TYPES.map(t=>t==="restore"?[TY[t]+" เสร็จแล้ว",cnt(t)+" / "+VS().length+" ไซต์"]:[TY[t]+" · Production",cnt(t,"production")+" / "+VS().length+" ไซต์","Staging "+cnt(t,"staging")+" / "+VS().length]).concat([["รอดำเนินการ",pend+" รายการ"],["เลยกำหนด",late+" รายการ"]])
+    .map(([l,v,x],i)=>{const p=String(v).split(" ");return `<div class="card sc" style="--c:${COL[i]}"><b${i===5&&+p[0]>0?' style="color:var(--bad)"':""}>${p[0]}<small> ${p.slice(1).join(" ")}</small></b><span>${l}</span>${x?`<em class="xs">${x}</em>`:""}${i<4?`<div class="bar"><i style="width:${cnt(TYPES[i],TYPES[i]==="restore"?"":"production")/VS().length*100}%"></i></div>`:""}</div>`}).join("");
+  $("ov").innerHTML=`<tr><th>ไซต์</th>${TYPES.map(t=>`<th class="tc t-${t}">${TY[t]}</th>`).join("")}</tr>`+
+    VS().map(s=>`<tr class="click" data-s="${s}"><td><span class="dot ${dotc(s)}"></span><b>${s}</b> <span class="mu">${nd(s)}/${SL.length}</span></td>${TYPES.map(t=>`<td>${cell2(s,t)}</td>`).join("")}</tr>`).join("");
+  const list=recs.filter(r=>(sel==="ALL"||r.site===sel)&&(!F.t||r.type===F.t)&&(!F.e||envOf(r)===F.e)&&(!F.st||(F.st==="late"?(r.status!=="done"&&r.date<today()):r.status===F.st))&&(!F.from||r.date>=F.from)&&(!F.to||r.date<=F.to)&&(!F.q||[r.site,r.version,r.note,r.by].join(" ").toLowerCase().includes(F.q.toLowerCase()))).sort((a,b)=>b.date.localeCompare(a.date));
+  $("ht").textContent="ประวัติ"+(sel==="ALL"?"ทั้งหมด":" – "+sel);$("ot").textContent=sel==="ALL"?"ภาพรวมแต่ละไซต์":"ภาพรวม – "+sel;$("rc").textContent=list.length+" / "+recs.length+" รายการ";
+  $("hist").innerHTML=`<tr><th>วันที่</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>สถานะ</th><th>ผู้ดำเนินการ</th><th>หมายเหตุ</th><th></th></tr>`+
+    (list.length?list.map(r=>`<tr><td class="${r.status!=="done"&&r.date<today()?"od":""}">${fd(r.date)}</td><td><b>${esc(r.site)}</b></td><td><span class="tag tt t-${r.type}">${TY[r.type]}</span>${envOf(r)?` <span class="tag ev ${envOf(r)}">${EN[envOf(r)]}</span>`:""}</td><td>${r.version?`<b>${esc(r.version)}</b>`:'<span class="mu">-</span>'}</td>
+    <td>${ro()?`<span class="tag ${r.status}">${ST[r.status]}</span>`:`<select class="st ${r.status}" data-id="${r.id}">${Object.keys(ST).map(k=>`<option value="${k}" ${r.status===k?"selected":""}>${ST[k]}</option>`).join("")}</select>`}</td>
+    <td>${esc(r.by)}</td><td>${esc(r.note)}</td><td>${ro()?"":`<button class="x" data-del="${r.id}">ลบ</button>`}</td></tr>`).join(""):`<tr><td colspan="8" class="none">ยังไม่มีรายการ</td></tr>`);
+}
+document.addEventListener("click",e=>{
+  const s=e.target.closest("[data-s]");if(s){sel=s.dataset.s;if(sel!=="ALL")$("fs").value=sel;render();return}
+  const d=e.target.closest("[data-del]");
+  if(d){const id=d.dataset.del;if(d.dataset.arm!=="1"){d.dataset.arm="1";d.textContent="ยืนยันลบ?";d.style.color="var(--bad)";d.style.fontWeight="600";setTimeout(()=>{d.dataset.arm="";d.textContent="ลบ";d.style.color="";d.style.fontWeight=""},3000);return}
+    if(col)col.doc(id).delete().then(()=>msg("ลบรายการแล้ว")).catch(err=>msg("ลบไม่สำเร็จ: "+((err&&err.message)||err)));else{recs=recs.filter(r=>r.id!==id);render()}}
+});
+document.addEventListener("change",e=>{
+  if(!e.target.classList.contains("st"))return;
+  const id=e.target.dataset.id,v=e.target.value;
+  if(col)col.doc(id).update({status:v}).catch(err=>msg("เปลี่ยนสถานะไม่สำเร็จ: "+((err&&err.message)||err)));else{const r=recs.find(r=>r.id===id);if(r)r.status=v;render()}
+});
+$("f").addEventListener("submit",e=>{
+  e.preventDefault();
+  const base={site:$("fs").value,date:$("fd").value,status:$("fst").value,by:$("fb").value.trim(),note:$("fn").value.trim()};
+  const picked=TYPES.filter(t=>document.querySelector('[data-t="'+t+'"]').checked);
+  if(!picked.length){msg("กรุณาเลือกประเภทงานอย่างน้อย 1 อย่าง");return}
+  const envs=ENVS.filter(e=>document.querySelector('[data-e="'+e+'"]').checked);
+  if(picked.some(t=>t!=="restore")&&!envs.length){msg("กรุณาเลือก Staging หรือ Production อย่างน้อย 1 อย่าง");return}
+  const rs=[];picked.forEach(t=>{const version=t==="restore"?"":document.querySelector('[data-v="'+t+'"]').value.trim();if(t==="restore")rs.push(Object.assign({type:t,version},base));else envs.forEach(e=>rs.push(Object.assign({type:t,env:e,version},base)))});
+  if(rs.some(x=>x.type!=="restore"&&!x.version)){msg("กรุณากรอก version ให้ครบทุก Patch ที่เลือก");return}
+  rs.forEach((r,i)=>{if(col)col.add(r).catch(err=>msg("บันทึกไม่สำเร็จ: "+((err&&err.message)||err)));else{r.id="l"+Date.now()+i;recs.push(r)}});if(!col)render();
+  document.querySelectorAll("[data-t]").forEach(c=>c.checked=false);document.querySelectorAll("[data-v]").forEach(v=>{v.value="";v.disabled=true});$("fn").value="";
+});
+$("mode").textContent="กำลังเชื่อมต่อ…";
+addEventListener("hashchange",render);
+document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.f;if(!k)return;F[k]=e.target.value;render()});
+$("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");document.querySelectorAll("[data-f]").forEach(i=>i.value="");render()});
+(async()=>{
+  try{
+    const db=window.claude?await claude.use("db"):null;
+    if(db){
+      col=db.collection("records");
+      col.onSnapshot(s=>{recs=s.docs.map(d=>Object.assign({id:d.id},d.data()));$("mode").textContent="ข้อมูลใช้ร่วมกันทั้งทีม";render()},()=>{$("mode").textContent="โหลดข้อมูลไม่สำเร็จ"});
+      return;
+    }
+  }catch(e){}
+  col=null;$("mode").textContent="โหมดทดลอง: ข้อมูลไม่ถูกเก็บถาวร (ต้องเข้าสู่ระบบ)";render();
+})();
+render();
+</script>
+</body>
+</html>
