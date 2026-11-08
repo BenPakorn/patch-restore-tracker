@@ -123,6 +123,14 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
 #nw:hover{background:#e9eef9}
 #lg,#cc{position:fixed;z-index:20;left:50%;top:50%;transform:translate(-50%,-50%);width:min(400px,calc(100% - 24px));display:none;box-shadow:0 20px 50px rgba(0,0,0,.3)}
 #lg.open,#cc.open{display:block}
+#lg,#cc{z-index:25}
+#hc,#lgc{position:fixed;z-index:20;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1100px,calc(100% - 24px));max-height:calc(100% - 40px);overflow:auto;display:none;padding-top:40px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+#hc.open,#lgc.open{display:block}
+.hx{position:absolute;top:8px;right:12px;font-size:18px}
+.ib{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit;display:inline-flex;gap:6px;align-items:center}
+.ib:hover{background:rgba(255,255,255,.26)}
+.ib b{background:#fff;color:#16294a;border-radius:9px;font-size:11px;padding:0 6px;font-weight:600}
+@media(max-width:600px){.ib span{display:none}}
 .sub.ol{box-shadow:inset 3px 0 0 var(--wr)}
 .old{font-size:11px;color:var(--wr);margin-top:3px}
 #tbs,#ebs{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -146,7 +154,7 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
 <div class="wrap">
   <aside class="side"><h3>Sites <span style="font-weight:400">· เลือกได้หลายไซต์</span></h3><div class="sl" id="sl"></div></aside>
   <main class="main">
-    <div class="top"><h1>Patch &amp; Restore Tracker <span class="tag doing" id="ro" style="display:none;font-size:12px;vertical-align:middle">👁 ดูอย่างเดียว</span></h1><div style="display:flex;align-items:center;gap:14px"><button type="button" id="nw">+ New</button><span class="mode"><span id="mode"></span> · <a href="#view" id="tg"></a></span></div></div>
+    <div class="top"><h1>Patch &amp; Restore Tracker <span class="tag doing" id="ro" style="display:none;font-size:12px;vertical-align:middle">👁 ดูอย่างเดียว</span></h1><div style="display:flex;align-items:center;gap:14px"><button type="button" id="nw">+ New</button><button type="button" class="ib" id="bh" title="ประวัติ" aria-label="ประวัติ">🕘 <span>ประวัติ</span> <b id="bhc">0</b></button><button type="button" class="ib" id="bl" title="บันทึกการยกเลิก" aria-label="บันทึกการยกเลิก">🚫 <span>ยกเลิก</span> <b id="blc">0</b></button><span class="mode"><span id="mode"></span> · <a href="#view" id="tg"></a></span></div></div>
     <div class="sum" id="sum"></div>
     <div class="card"><h2 id="ot">ภาพรวมแต่ละไซต์</h2><div class="scroll"><table id="ov"></table></div></div>
     <div class="card" id="fc"><h2 style="display:flex;justify-content:space-between;align-items:center">บันทึกรายการใหม่<button type="button" class="x" id="fx" style="font-size:18px">✕</button></h2>
@@ -161,7 +169,7 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
         <button class="pri" type="submit">บันทึก</button>
       </form>
     </div>
-    <div class="card"><h2 id="ht">ประวัติทั้งหมด</h2>
+    <div class="card" id="hc"><button type="button" class="x hx" data-close="1">✕</button><h2 id="ht">ประวัติทั้งหมด</h2>
       <div class="fl"><input data-f="q" placeholder="ค้นหา version / หมายเหตุ / ผู้ดำเนินการ">
         <select data-f="t"><option value="">ทุกประเภท</option><option value="web">Patch Web</option><option value="api">Patch API</option><option value="medcer">Patch Medcer</option><option value="restore">Restore data</option></select>
         <select data-f="e"><option value="">ทุกสภาพแวดล้อม</option><option value="staging">Staging</option><option value="production">Production</option></select>
@@ -171,7 +179,7 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
         <button type="button" class="ghost" id="fr">ล้างตัวกรอง</button><span class="mu" id="rc"></span></div>
       <div class="scroll"><table id="hist"></table></div>
     </div>
-  <div class="card" id="lgc"><h2>บันทึกการยกเลิก <span class="mu" id="lc"></span></h2><div class="scroll"><table id="lgt"></table></div></div></main><div id="bd"></div>
+  <div class="card" id="lgc"><button type="button" class="x hx" data-close="1">✕</button><h2>บันทึกการยกเลิก <span class="mu" id="lc"></span></h2><div class="scroll"><table id="lgt"></table></div></div></main><div id="bd"></div>
 <div class="card" id="lg"><h2 style="display:flex;justify-content:space-between;align-items:center">เข้าสู่ระบบ Admin<button type="button" class="x" id="lx" style="font-size:18px">✕</button></h2><div style="display:grid;gap:10px"><label>ชื่อผู้ใช้<input id="lu" autocomplete="username"></label><label>รหัสผ่าน<input id="lp" type="password" autocomplete="current-password"></label><div id="le" style="color:var(--bad);font-size:12px;min-height:16px"></div><button type="button" class="pri" id="lb">เข้าสู่ระบบ</button></div></div>
 <div class="card" id="cc"><h2>ยกเลิกรายการ</h2><div id="ci" class="mu" style="margin-bottom:10px"></div><label>เหตุผลที่ยกเลิก (จำเป็นต้องระบุ)<input id="cr"></label><div id="ce" style="color:var(--bad);font-size:12px;min-height:16px;margin-top:6px"></div><div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="pri" id="cb">ยืนยันยกเลิก</button><button type="button" class="ghost" id="cn">ไม่ยกเลิก</button></div></div>
 </div>
@@ -262,16 +270,23 @@ $("f").addEventListener("submit",e=>{
   document.querySelectorAll("[data-t]").forEach(c=>c.checked=false);document.querySelectorAll("[data-v]").forEach(v=>{v.value="";v.disabled=true});$("fn").value="";nm(false);msg("บันทึกแล้ว "+rs.length+" รายการ");
 });
 $("mode").textContent="กำลังเชื่อมต่อ…";
-function nm(o){$("fc").classList.toggle("open",o);$("bd").classList.toggle("open",o)}
-function lm(o){$("lg").classList.toggle("open",o);$("bd").classList.toggle("open",o);if(o){$("le").textContent="";$("lu").focus()}}
-function cm(o){$("cc").classList.toggle("open",o);$("bd").classList.toggle("open",o);if(o)$("cr").focus()}
+const PANELS=["fc","lg","cc","hc","lgc"];
+function bdSync(){$("bd").classList.toggle("open",PANELS.some(i=>$(i).classList.contains("open")))}
+function nm(o){$("fc").classList.toggle("open",o);bdSync()}
+function lm(o){$("lg").classList.toggle("open",o);bdSync();if(o){$("le").textContent="";$("lu").focus()}}
+function cm(o){$("cc").classList.toggle("open",o);bdSync();if(o)$("cr").focus()}
+function hm(o){$("hc").classList.toggle("open",o);bdSync()}
+function gm(o){$("lgc").classList.toggle("open",o);bdSync()}
+$("bh").addEventListener("click",()=>hm(true));
+$("bl").addEventListener("click",()=>gm(true));
+document.addEventListener("click",e=>{if(e.target.closest("[data-close]")){hm(false);gm(false)}});
 let cid="";
 document.addEventListener("click",e=>{const c=e.target.closest("[data-cx]");if(!c)return;cid=c.dataset.cx;const r=recs.find(x=>x.id===cid)||{};$("ci").textContent=[r.site,TY[r.type],envOf(r)?EN[envOf(r)]:"",r.version,fd(r.date)].filter(Boolean).join(" · ");$("cr").value="";$("ce").textContent="";cm(true)});
-function renderLog(){const L=logs.filter(l=>!sel.length||sel.includes(l.site));$("lc").textContent="("+L.length+" รายการ)";$("lgt").innerHTML='<tr><th>ยกเลิกเมื่อ</th><th>โดย</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>วันที่ทำงาน</th><th>สถานะเดิม</th><th>เหตุผล</th></tr>'+(L.length?L.map(l=>`<tr><td class="mu" style="white-space:nowrap">${fi({ins:l.logAt})}</td><td>${esc(l.user)}</td><td><b>${esc(l.site)}</b></td><td>${esc(TY[l.type]||l.type)}${envOf(l)?" · "+EN[envOf(l)]:""}</td><td>${esc(l.version)||"-"}</td><td>${fd(l.date)}</td><td>${esc(ST[l.status]||l.status)}</td><td>${esc(l.reason)}</td></tr>`).join(""):'<tr><td colspan="8" class="none">ยังไม่มีการยกเลิก</td></tr>')}
+function renderLog(){const L=logs.filter(l=>!sel.length||sel.includes(l.site));$("lc").textContent="("+L.length+" รายการ)";$("blc").textContent=L.length;$("bhc").textContent=recs.filter(r=>!sel.length||sel.includes(r.site)).length;$("lgt").innerHTML='<tr><th>ยกเลิกเมื่อ</th><th>โดย</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>วันที่ทำงาน</th><th>สถานะเดิม</th><th>เหตุผล</th></tr>'+(L.length?L.map(l=>`<tr><td class="mu" style="white-space:nowrap">${fi({ins:l.logAt})}</td><td>${esc(l.user)}</td><td><b>${esc(l.site)}</b></td><td>${esc(TY[l.type]||l.type)}${envOf(l)?" · "+EN[envOf(l)]:""}</td><td>${esc(l.version)||"-"}</td><td>${fd(l.date)}</td><td>${esc(ST[l.status]||l.status)}</td><td>${esc(l.reason)}</td></tr>`).join(""):'<tr><td colspan="8" class="none">ยังไม่มีการยกเลิก</td></tr>')}
 addEventListener("hashchange",render);
 $("nw").addEventListener("click",()=>nm(true));$("fx").addEventListener("click",()=>nm(false));$("bd").addEventListener("click",()=>nm(false));
-addEventListener("keydown",e=>{if(e.key==="Escape"){nm(false);lm(false);cm(false)}});
-$("bd").addEventListener("click",()=>{lm(false);cm(false)});
+addEventListener("keydown",e=>{if(e.key==="Escape"){nm(false);lm(false);cm(false);hm(false);gm(false)}});
+$("bd").addEventListener("click",()=>{lm(false);cm(false);hm(false);gm(false)});
 document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.f;if(!k)return;F[k]=e.target.value;render()});
 $("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");document.querySelectorAll("[data-f]").forEach(i=>i.value="");render()});
 (()=>{
@@ -291,7 +306,7 @@ $("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");documen
     })
   };
   const setSess=(t,u)=>{SESS=t;USER=u;try{t?sessionStorage.setItem("ptr_s",t+"|"+u):sessionStorage.removeItem("ptr_s")}catch(e){}render()};
-  const doLogin=()=>{$("le").textContent="กำลังตรวจสอบ…";post({action:"login",user:$("lu").value.trim(),pass:$("lp").value}).then(j=>{setSess(j.session,j.user);$("lp").value="";lm(false);msg("เข้าสู่ระบบแล้ว");load()}).catch(e=>{$("le").textContent=e.message==="locked"?"ลองผิดหลายครั้ง กรุณารอ 10 นาทีแล้วลองใหม่":"ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"})};
+  const doLogin=()=>{$("le").textContent="กำลังตรวจสอบ…";post({action:"login",user:$("lu").value.trim(),pass:$("lp").value}).then(j=>{setSess(j.session,j.user);$("lp").value="";lm(false);msg("เข้าสู่ระบบแล้ว");load()}).catch(e=>{$("le").textContent=e.message==="locked"?"ลองผิดหลายครั้ง กรุณารอ 10 นาทีแล้วลองใหม่":e.message==="bad login"?"ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง":"เชื่อมต่อไม่สำเร็จ ("+e.message+") ตรวจว่า Deploy สคริปต์เวอร์ชันใหม่แล้ว"})};
   const doLogout=()=>{post({action:"logout"}).catch(()=>{});setSess("","");msg("ออกจากระบบแล้ว")};
   $("tg").addEventListener("click",e=>{e.preventDefault();SESS?doLogout():lm(true)});
   $("lb").addEventListener("click",doLogin);
