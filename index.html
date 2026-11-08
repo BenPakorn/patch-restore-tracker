@@ -217,7 +217,7 @@ const nd=s=>SL.filter(([t,e])=>t==="restore"?recs.some(r=>r.site===s&&ry(r)):onT
 const dotc=s=>nd(s)===SL.length?"g":nd(s)===0?"r":"y";
 const cls=(s,t,e)=>{const d=latestDone(s,t,e);if(!d)return nextPlan(s,t,e)?"pn":"nn";return (t==="restore"?ry(d):onTarget(s,t,e))?"dn":"ol"};
 function cell2(s,t){if(t==="restore")return `<div class="sub ${cls(s,t)}">${body(s,t)}</div>`;return ENVS.map(e=>`<div class="sub ${cls(s,t,e)}"><span class="env">${EN[e]}</span>${body(s,t,e)}</div>`).join("")}
-function body(s,t,e){const d=latestDone(s,t,e),n=nextPlan(s,t,e);return (d?cell(d):'<span class="none">ยังไม่มีข้อมูล</span>')+(d&&t!=="restore"&&!onTarget(s,t,e)?`<div class="old">ไม่ใช่เวอร์ชันล่าสุด (${esc(target(t))})</div>`:"")+(d&&t==="restore"&&!ry(d)?`<div class="old">ยังไม่ได้ทำในปี ${yr}</div>`:"")+(n?`<div style="margin-top:4px;font-size:12px"><span class="mu">ถัดไป:</span> ${n.version?esc(n.version)+" · ":""}${fd(n.date)} <span class="tag ${n.status}">${ST[n.status]}</span></div>`:"")}
+function body(s,t,e){const d=latestDone(s,t,e),n=nextPlan(s,t,e);return (d?cell(d):'<span class="none">ยังไม่มีข้อมูล</span>')+(d&&t!=="restore"&&!onTarget(s,t,e)?`<div class="old">ไม่ใช่เวอร์ชันล่าสุด (${esc(target(t))})</div>`:"")+(d&&t==="restore"&&!ry(d)?`<div class="old">ยังไม่ได้ทำในปี ${yr}</div>`:"")+(n?`<div style="margin-top:4px;font-size:12px"><span class="mu">ถัดไป:</span> ${n.version?esc(n.version)+" · ":""}${fd(n.date)} ${ro()?`<span class="tag ${n.status}">${ST[n.status]}</span>`:`<select class="st ${n.status}" data-id="${n.id}" title="เปลี่ยนสถานะ">${Object.keys(ST).map(k=>`<option value="${k}" ${n.status===k?"selected":""}>${ST[k]}</option>`).join("")}</select>`}</div>`:"")}
 function latestDone(site,type,env){return recs.filter(r=>r.site===site&&r.type===type&&(!env||envOf(r)===env)&&r.status==="done").sort((a,b)=>b.date.localeCompare(a.date))[0]}
 function nextPlan(site,type,env){return recs.filter(r=>r.site===site&&r.type===type&&(!env||envOf(r)===env)&&r.status!=="done").sort((a,b)=>a.date.localeCompare(b.date))[0]}
 function cell(r,planned){
@@ -245,7 +245,7 @@ const cnt=(t,e)=>VS().filter(s=>latestDone(s,t,e)).length;
     <td>${esc(r.by)}</td><td>${esc(r.note)}</td><td>${ro()?"":`<button class="x" data-cx="${r.id}">ยกเลิก</button>`}</td></tr>`).join(""):`<tr><td colspan="9" class="none">ยังไม่มีรายการ</td></tr>`);
 }
 document.addEventListener("click",e=>{
-  const s=e.target.closest("[data-s]");if(s){const k=s.dataset.s;
+  const s=e.target.closest("select")?null:e.target.closest("[data-s]");if(s){const k=s.dataset.s;
     if(k==="ALL")sel=[];else if(s.classList.contains("si"))sel=sel.includes(k)?sel.filter(x=>x!==k):sel.concat(k);else sel=[k];
     sel=SITES.filter(x=>sel.includes(x));if(sel.length===1)$("fs").value=sel[0];render();return}
   const d=e.target.closest("[data-del]");
