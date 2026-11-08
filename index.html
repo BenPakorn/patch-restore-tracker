@@ -172,6 +172,8 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
   </main><div id="bd"></div>
 </div>
 <script>
+const API="https://script.google.com/macros/s/AKfycbwwCC_VkLd57xpH8nZJFuYIDYnIBz7_S8xGjgKkHibJ48pUUoQ78ao8bfXyrK0ADc1Q/exec";
+const TOKEN="xYxUUQj/suisL8v/EbLuwQ=="; // <-- แก้ตรงนี้ ให้เหมือนค่า TOKEN ใน Apps Script
 const SITES=["AIH","ASPEN","COEO","CRA","MKT","PR9","RSU","THAMC","TCH","VMI","VTH","WIH"];
 const ST={plan:"วางแผน",doing:"กำลังทำ",done:"เสร็จแล้ว"};
 const TYPES=["web","api","medcer","restore"];
@@ -262,16 +264,20 @@ $("nw").addEventListener("click",()=>nm(true));$("fx").addEventListener("click",
 addEventListener("keydown",e=>{if(e.key==="Escape")nm(false)});
 document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.f;if(!k)return;F[k]=e.target.value;render()});
 $("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");document.querySelectorAll("[data-f]").forEach(i=>i.value="");render()});
-(async()=>{
-  try{
-    const db=window.claude?await claude.use("db"):null;
-    if(db){
-      col=db.collection("records");
-      col.onSnapshot(s=>{recs=s.docs.map(d=>Object.assign({id:d.id},d.data()));$("mode").textContent="ข้อมูลใช้ร่วมกันทั้งทีม";render()},()=>{$("mode").textContent="โหลดข้อมูลไม่สำเร็จ"});
-      return;
-    }
-  }catch(e){}
-  col=null;LM=true;try{recs=JSON.parse(localStorage.getItem("ptr")||"[]")}catch(e){}$("mode").textContent="เก็บข้อมูลในเบราว์เซอร์นี้เท่านั้น";render();
+(()=>{
+  let busy=0;
+  const post=o=>{busy++;return fetch(API,{method:"POST",body:JSON.stringify(Object.assign({token:TOKEN},o))}).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");return j}).finally(()=>{busy--})};
+  const load=()=>{if(busy)return Promise.resolve();return fetch(API+"?token="+encodeURIComponent(TOKEN)).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");recs=j.rows;const d=new Date(),p=n=>String(n).padStart(2,"0");$("mode").textContent="Google Sheets · อัปเดต "+p(d.getHours())+":"+p(d.getMinutes());render()}).catch(e=>{$("mode").textContent="เชื่อมต่อไม่สำเร็จ: "+(e.message==="unauthorized"?"รหัส TOKEN ไม่ถูกต้อง":e.message)})};
+  const safe=p=>p.then(load).catch(e=>{load();throw e});
+  col={
+    add:r=>{r.id="t"+Date.now()+Math.random().toString(36).slice(2,5);recs.push(Object.assign({},r));render();return safe(post({action:"add",row:r}))},
+    doc:id=>({
+      update:d=>{const r=recs.find(x=>x.id===id);if(r)Object.assign(r,d);render();return safe(post({action:"update",id,data:d}))},
+      delete:()=>{recs=recs.filter(x=>x.id!==id);render();return safe(post({action:"delete",id}))}
+    })
+  };
+  if(TOKEN.indexOf("ใส่รหัส")===0){$("mode").textContent="ยังไม่ได้ตั้งค่า TOKEN ในไฟล์ index.html";return}
+  load();setInterval(load,30000);
 })();
 render();
 </script>
