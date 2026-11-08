@@ -121,6 +121,8 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
 #bd.open{display:block}
 #nw{background:#fff;color:#16294a;font:inherit;font-weight:600;padding:7px 16px;border:0;border-radius:8px;cursor:pointer}
 #nw:hover{background:#e9eef9}
+#lg,#cc{position:fixed;z-index:20;left:50%;top:50%;transform:translate(-50%,-50%);width:min(400px,calc(100% - 24px));display:none;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+#lg.open,#cc.open{display:block}
 .sub.ol{box-shadow:inset 3px 0 0 var(--wr)}
 .old{font-size:11px;color:var(--wr);margin-top:3px}
 #tbs,#ebs{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -169,10 +171,12 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
         <button type="button" class="ghost" id="fr">ล้างตัวกรอง</button><span class="mu" id="rc"></span></div>
       <div class="scroll"><table id="hist"></table></div>
     </div>
-  </main><div id="bd"></div>
+  <div class="card" id="lgc"><h2>บันทึกการยกเลิก <span class="mu" id="lc"></span></h2><div class="scroll"><table id="lgt"></table></div></div></main><div id="bd"></div>
+<div class="card" id="lg"><h2 style="display:flex;justify-content:space-between;align-items:center">เข้าสู่ระบบ Admin<button type="button" class="x" id="lx" style="font-size:18px">✕</button></h2><div style="display:grid;gap:10px"><label>ชื่อผู้ใช้<input id="lu" autocomplete="username"></label><label>รหัสผ่าน<input id="lp" type="password" autocomplete="current-password"></label><div id="le" style="color:var(--bad);font-size:12px;min-height:16px"></div><button type="button" class="pri" id="lb">เข้าสู่ระบบ</button></div></div>
+<div class="card" id="cc"><h2>ยกเลิกรายการ</h2><div id="ci" class="mu" style="margin-bottom:10px"></div><label>เหตุผลที่ยกเลิก (จำเป็นต้องระบุ)<input id="cr"></label><div id="ce" style="color:var(--bad);font-size:12px;min-height:16px;margin-top:6px"></div><div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="pri" id="cb">ยืนยันยกเลิก</button><button type="button" class="ghost" id="cn">ไม่ยกเลิก</button></div></div>
 </div>
 <script>
-const API="https://script.google.com/macros/s/AKfycbz_J5dbEPL3j9FCeMiozs7-gYrp67WmQi3aHHol8HFP5zjBx60H2_KuS0BhwHCXTDnG/exec";
+const API="https://script.google.com/macros/s/AKfycbwwCC_VkLd57xpH8nZJFuYIDYnIBz7_S8xGjgKkHibJ48pUUoQ78ao8bfXyrK0ADc1Q/exec";
 const TOKEN="xYxUUQj/suisL8v/EbLuwQ==";
 const SITES=["AIH","ASPEN","COEO","CRA","MKT","PR9","RSU","THAMC","TCH","VMI","VTH","WIH"];
 const ST={plan:"วางแผน",doing:"กำลังทำ",done:"เสร็จแล้ว"};
@@ -181,7 +185,7 @@ const ENVS=["staging","production"],EN={staging:"Staging",production:"Production
 const envOf=r=>r.type==="restore"?"":(r.env||"production");
 const SL=[];TYPES.forEach(t=>t==="restore"?SL.push([t,""]):ENVS.forEach(e=>SL.push([t,e])));
 const TY={web:"Patch Web",api:"Patch API",medcer:"Patch Medcer",restore:"Restore data"};
-let recs=[],sel=[],col=null,LM=false;const F={q:"",t:"",e:"",st:"",from:"",to:"",o:""};
+let recs=[],sel=[],col=null,LM=false,logs=[],SESS="",USER="";try{const q=sessionStorage.getItem("ptr_s");if(q){const a=q.split("|");SESS=a[0];USER=a[1]||""}}catch(e){}const F={q:"",t:"",e:"",st:"",from:"",to:"",o:""};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fd=d=>{if(!d)return"-";const[y,m,x]=d.split("-");return x+"/"+m+"/"+y};
@@ -193,7 +197,7 @@ document.addEventListener("change",e=>{const t=e.target.dataset&&e.target.datase
 $("fs").innerHTML=SITES.map(s=>`<option>${s}</option>`).join("");
 
 function msg(t){let b=$("toast");if(!b){b=document.createElement("div");b.id="toast";b.style.cssText="position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1b2430;color:#fff;padding:10px 16px;border-radius:10px;z-index:30;font-size:13px;max-width:90%";document.body.appendChild(b)}b.textContent=t;b.style.display="block";clearTimeout(b._t);b._t=setTimeout(()=>b.style.display="none",4000)}
-const ro=()=>location.hash==="#view";
+const ro=()=>!SESS;
 const COL=["var(--c-web)","var(--c-api)","var(--c-medcer)","var(--c-restore)","var(--wr)","var(--bad)"];
 const yr=String(new Date().getFullYear());
 const ry=r=>r.type==="restore"&&r.status==="done"&&String(r.date).slice(0,4)===yr;
@@ -212,8 +216,8 @@ function cell(r,planned){
   if(!r)return'<span class="none">-</span>';
   return`${r.version?`<b>${esc(r.version)}</b><br><span class="mu">${fd(r.date)}</span>`:`<b>${fd(r.date)}</b>`}${planned?` <span class="tag ${r.status}">${ST[r.status]}</span>`:""}`;
 }
-function render(){if(LM)try{localStorage.setItem("ptr",JSON.stringify(recs))}catch(e){}
-  $("fc").style.display=ro()?"none":"";$("nw").style.display=ro()?"none":"";if(ro())nm(false);$("ro").style.display=ro()?"":"none";$("tg").textContent=ro()?"โหมดแก้ไข":"ดูอย่างเดียว";$("tg").href=ro()?"#edit":"#view";
+function render(){renderLog();if(LM)try{localStorage.setItem("ptr",JSON.stringify(recs))}catch(e){}
+  $("fc").style.display=ro()?"none":"";$("nw").style.display=ro()?"none":"";if(ro())nm(false);$("ro").style.display=ro()?"":"none";$("tg").textContent=SESS?("👤 "+USER+" · ออกจากระบบ"):"เข้าสู่ระบบ Admin";$("tg").href="#login";
   $("sl").innerHTML=[["ALL","ทั้งหมด",recs.length]].concat(SITES.map(s=>[s,s,recs.filter(r=>r.site===s).length]))
     .map(([k,n,c])=>`<button class="si ${(k==="ALL"?!sel.length:sel.includes(k))?"on":""}" data-s="${k}"><span>${k==="ALL"?"":`<span class="dot ${dotc(k)}"></span>`}${n}</span></button>`).join("");
   const VS=()=>sel.length?SITES.filter(s=>sel.includes(s)):SITES;
@@ -230,7 +234,7 @@ const cnt=(t,e)=>VS().filter(s=>latestDone(s,t,e)).length;
   $("hist").innerHTML=`<tr><th>บันทึกเมื่อ</th><th>วันที่ทำงาน</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>สถานะ</th><th>ผู้ดำเนินการ</th><th>หมายเหตุ</th><th></th></tr>`+
     (list.length?list.map(r=>`<tr><td class="mu" style="white-space:nowrap">${fi(r)}</td><td class="${r.status!=="done"&&r.date<today()?"od":""}">${fd(r.date)}</td><td><b>${esc(r.site)}</b></td><td><span class="tag tt t-${r.type}">${TY[r.type]}</span>${envOf(r)?` <span class="tag ev ${envOf(r)}">${EN[envOf(r)]}</span>`:""}</td><td>${r.version?`<b>${esc(r.version)}</b>`:'<span class="mu">-</span>'}</td>
     <td>${ro()?`<span class="tag ${r.status}">${ST[r.status]}</span>`:`<select class="st ${r.status}" data-id="${r.id}">${Object.keys(ST).map(k=>`<option value="${k}" ${r.status===k?"selected":""}>${ST[k]}</option>`).join("")}</select>`}</td>
-    <td>${esc(r.by)}</td><td>${esc(r.note)}</td><td>${ro()?"":`<button class="x" data-del="${r.id}">ลบ</button>`}</td></tr>`).join(""):`<tr><td colspan="9" class="none">ยังไม่มีรายการ</td></tr>`);
+    <td>${esc(r.by)}</td><td>${esc(r.note)}</td><td>${ro()?"":`<button class="x" data-cx="${r.id}">ยกเลิก</button>`}</td></tr>`).join(""):`<tr><td colspan="9" class="none">ยังไม่มีรายการ</td></tr>`);
 }
 document.addEventListener("click",e=>{
   const s=e.target.closest("[data-s]");if(s){const k=s.dataset.s;
@@ -247,7 +251,7 @@ document.addEventListener("change",e=>{
 });
 $("f").addEventListener("submit",e=>{
   e.preventDefault();
-  const base={site:$("fs").value,date:$("fd").value,status:$("fst").value,by:$("fb").value.trim(),note:$("fn").value.trim()};
+  const base={site:$("fs").value,date:$("fd").value,status:$("fst").value,by:$("fb").value.trim()||USER,note:$("fn").value.trim()};
   const picked=TYPES.filter(t=>document.querySelector('[data-t="'+t+'"]').checked);
   if(!picked.length){msg("กรุณาเลือกประเภทงานอย่างน้อย 1 อย่าง");return}
   const envs=ENVS.filter(e=>document.querySelector('[data-e="'+e+'"]').checked);
@@ -259,9 +263,15 @@ $("f").addEventListener("submit",e=>{
 });
 $("mode").textContent="กำลังเชื่อมต่อ…";
 function nm(o){$("fc").classList.toggle("open",o);$("bd").classList.toggle("open",o)}
+function lm(o){$("lg").classList.toggle("open",o);$("bd").classList.toggle("open",o);if(o){$("le").textContent="";$("lu").focus()}}
+function cm(o){$("cc").classList.toggle("open",o);$("bd").classList.toggle("open",o);if(o)$("cr").focus()}
+let cid="";
+document.addEventListener("click",e=>{const c=e.target.closest("[data-cx]");if(!c)return;cid=c.dataset.cx;const r=recs.find(x=>x.id===cid)||{};$("ci").textContent=[r.site,TY[r.type],envOf(r)?EN[envOf(r)]:"",r.version,fd(r.date)].filter(Boolean).join(" · ");$("cr").value="";$("ce").textContent="";cm(true)});
+function renderLog(){const L=logs.filter(l=>!sel.length||sel.includes(l.site));$("lc").textContent="("+L.length+" รายการ)";$("lgt").innerHTML='<tr><th>ยกเลิกเมื่อ</th><th>โดย</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>วันที่ทำงาน</th><th>สถานะเดิม</th><th>เหตุผล</th></tr>'+(L.length?L.map(l=>`<tr><td class="mu" style="white-space:nowrap">${fi({ins:l.logAt})}</td><td>${esc(l.user)}</td><td><b>${esc(l.site)}</b></td><td>${esc(TY[l.type]||l.type)}${envOf(l)?" · "+EN[envOf(l)]:""}</td><td>${esc(l.version)||"-"}</td><td>${fd(l.date)}</td><td>${esc(ST[l.status]||l.status)}</td><td>${esc(l.reason)}</td></tr>`).join(""):'<tr><td colspan="8" class="none">ยังไม่มีการยกเลิก</td></tr>')}
 addEventListener("hashchange",render);
 $("nw").addEventListener("click",()=>nm(true));$("fx").addEventListener("click",()=>nm(false));$("bd").addEventListener("click",()=>nm(false));
-addEventListener("keydown",e=>{if(e.key==="Escape")nm(false)});
+addEventListener("keydown",e=>{if(e.key==="Escape"){nm(false);lm(false);cm(false)}});
+$("bd").addEventListener("click",()=>{lm(false);cm(false)});
 document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.f;if(!k)return;F[k]=e.target.value;render()});
 $("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");document.querySelectorAll("[data-f]").forEach(i=>i.value="");render()});
 (()=>{
@@ -270,16 +280,25 @@ $("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");documen
   const nd=v=>{v=String(v||"");if(/^\d{4}-\d{2}-\d{2}/.test(v))return v.slice(0,10);const m=v.match(/^\w{3} (\w{3}) (\d{1,2}) (\d{4})/);return m?m[3]+"-"+String(MON.indexOf(m[1])+1).padStart(2,"0")+"-"+m[2].padStart(2,"0"):v};
   const ni=v=>{v=String(v||"");if(!v||/^\d{4}-\d{2}-\d{2}T/.test(v))return v;const d=new Date(v);return isNaN(d)?v:d.toISOString()};
   const fix=r=>Object.assign(r,{date:nd(r.date),ins:ni(r.ins),version:String(r.version||"")});
-  const post=o=>{busy++;return fetch(API,{method:"POST",body:JSON.stringify(Object.assign({token:TOKEN},o))}).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");return j}).finally(()=>{busy--})};
-  const load=()=>{if(busy)return Promise.resolve();return fetch(API+"?token="+encodeURIComponent(TOKEN)).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");recs=j.rows.map(fix);const d=new Date(),p=n=>String(n).padStart(2,"0");$("mode").textContent="Google Sheets · อัปเดต "+p(d.getHours())+":"+p(d.getMinutes());render()}).catch(e=>{$("mode").textContent="เชื่อมต่อไม่สำเร็จ: "+(e.message==="unauthorized"?"รหัส TOKEN ไม่ถูกต้อง":e.message)})};
-  const safe=p=>p.then(load).catch(e=>{load();throw e});
+  const post=o=>{busy++;return fetch(API,{method:"POST",body:JSON.stringify(Object.assign({token:TOKEN,session:SESS},o))}).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");return j}).finally(()=>{busy--})};
+  const load=()=>{if(busy)return Promise.resolve();return fetch(API+"?token="+encodeURIComponent(TOKEN)).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");recs=j.rows.map(fix);const d=new Date(),p=n=>String(n).padStart(2,"0");$("mode").textContent="Google Sheets · อัปเดต "+p(d.getHours())+":"+p(d.getMinutes());render();return fetch(API+"?token="+encodeURIComponent(TOKEN)+"&what=log").then(r=>r.json()).then(k=>{if(k.ok){logs=k.rows.map(fix).sort((a,b)=>String(b.logAt).localeCompare(String(a.logAt)));render()}})}).catch(e=>{$("mode").textContent="เชื่อมต่อไม่สำเร็จ: "+(e.message==="unauthorized"?"รหัส TOKEN ไม่ถูกต้อง":e.message)})};
+  const safe=p=>p.then(load).catch(e=>{load();if(e.message==="login required"){setSess("","");e=new Error("เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่")}throw e});
   col={
     add:r=>{r.id="t"+Date.now()+Math.random().toString(36).slice(2,5);recs.push(Object.assign({},r));render();return safe(post({action:"add",row:r}))},
     doc:id=>({
       update:d=>{const r=recs.find(x=>x.id===id);if(r)Object.assign(r,d);render();return safe(post({action:"update",id,data:d}))},
-      delete:()=>{recs=recs.filter(x=>x.id!==id);render();return safe(post({action:"delete",id}))}
+      cancel:why=>{recs=recs.filter(x=>x.id!==id);render();return safe(post({action:"cancel",id,reason:why}))}
     })
   };
+  const setSess=(t,u)=>{SESS=t;USER=u;try{t?sessionStorage.setItem("ptr_s",t+"|"+u):sessionStorage.removeItem("ptr_s")}catch(e){}render()};
+  const doLogin=()=>{$("le").textContent="กำลังตรวจสอบ…";post({action:"login",user:$("lu").value.trim(),pass:$("lp").value}).then(j=>{setSess(j.session,j.user);$("lp").value="";lm(false);msg("เข้าสู่ระบบแล้ว");load()}).catch(e=>{$("le").textContent=e.message==="locked"?"ลองผิดหลายครั้ง กรุณารอ 10 นาทีแล้วลองใหม่":"ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"})};
+  const doLogout=()=>{post({action:"logout"}).catch(()=>{});setSess("","");msg("ออกจากระบบแล้ว")};
+  $("tg").addEventListener("click",e=>{e.preventDefault();SESS?doLogout():lm(true)});
+  $("lb").addEventListener("click",doLogin);
+  $("lp").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
+  $("lx").addEventListener("click",()=>lm(false));
+  $("cn").addEventListener("click",()=>cm(false));
+  $("cb").addEventListener("click",()=>{const why=$("cr").value.trim();if(!why){$("ce").textContent="กรุณาระบุเหตุผล";return}cm(false);col.doc(cid).cancel(why).then(()=>msg("ยกเลิกรายการแล้ว และบันทึกลง log")).catch(err=>msg("ยกเลิกไม่สำเร็จ: "+((err&&err.message)||err)))});
   if(TOKEN.indexOf("ใส่รหัส")===0){$("mode").textContent="ยังไม่ได้ตั้งค่า TOKEN ในไฟล์ index.html";return}
   load();setInterval(load,30000);
 })();
