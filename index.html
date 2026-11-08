@@ -172,8 +172,8 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
   </main><div id="bd"></div>
 </div>
 <script>
-const API="https://script.google.com/macros/s/AKfycbwwCC_VkLd57xpH8nZJFuYIDYnIBz7_S8xGjgKkHibJ48pUUoQ78ao8bfXyrK0ADc1Q/exec";
-const TOKEN="xYxUUQj/suisL8v/EbLuwQ=="; // <-- แก้ตรงนี้ ให้เหมือนค่า TOKEN ใน Apps Script
+const API="https://script.google.com/macros/s/AKfycbz_J5dbEPL3j9FCeMiozs7-gYrp67WmQi3aHHol8HFP5zjBx60H2_KuS0BhwHCXTDnG/exec";
+const TOKEN="xYxUUQj/suisL8v/EbLuwQ==";
 const SITES=["AIH","ASPEN","COEO","CRA","MKT","PR9","RSU","THAMC","TCH","VMI","VTH","WIH"];
 const ST={plan:"วางแผน",doing:"กำลังทำ",done:"เสร็จแล้ว"};
 const TYPES=["web","api","medcer","restore"];
@@ -266,8 +266,12 @@ document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset
 $("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");document.querySelectorAll("[data-f]").forEach(i=>i.value="");render()});
 (()=>{
   let busy=0;
+  const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const nd=v=>{v=String(v||"");if(/^\d{4}-\d{2}-\d{2}/.test(v))return v.slice(0,10);const m=v.match(/^\w{3} (\w{3}) (\d{1,2}) (\d{4})/);return m?m[3]+"-"+String(MON.indexOf(m[1])+1).padStart(2,"0")+"-"+m[2].padStart(2,"0"):v};
+  const ni=v=>{v=String(v||"");if(!v||/^\d{4}-\d{2}-\d{2}T/.test(v))return v;const d=new Date(v);return isNaN(d)?v:d.toISOString()};
+  const fix=r=>Object.assign(r,{date:nd(r.date),ins:ni(r.ins),version:String(r.version||"")});
   const post=o=>{busy++;return fetch(API,{method:"POST",body:JSON.stringify(Object.assign({token:TOKEN},o))}).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");return j}).finally(()=>{busy--})};
-  const load=()=>{if(busy)return Promise.resolve();return fetch(API+"?token="+encodeURIComponent(TOKEN)).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");recs=j.rows;const d=new Date(),p=n=>String(n).padStart(2,"0");$("mode").textContent="Google Sheets · อัปเดต "+p(d.getHours())+":"+p(d.getMinutes());render()}).catch(e=>{$("mode").textContent="เชื่อมต่อไม่สำเร็จ: "+(e.message==="unauthorized"?"รหัส TOKEN ไม่ถูกต้อง":e.message)})};
+  const load=()=>{if(busy)return Promise.resolve();return fetch(API+"?token="+encodeURIComponent(TOKEN)).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");recs=j.rows.map(fix);const d=new Date(),p=n=>String(n).padStart(2,"0");$("mode").textContent="Google Sheets · อัปเดต "+p(d.getHours())+":"+p(d.getMinutes());render()}).catch(e=>{$("mode").textContent="เชื่อมต่อไม่สำเร็จ: "+(e.message==="unauthorized"?"รหัส TOKEN ไม่ถูกต้อง":e.message)})};
   const safe=p=>p.then(load).catch(e=>{load();throw e});
   col={
     add:r=>{r.id="t"+Date.now()+Math.random().toString(36).slice(2,5);recs.push(Object.assign({},r));render();return safe(post({action:"add",row:r}))},
