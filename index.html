@@ -126,6 +126,8 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
 #lg,#cc{z-index:25}
 .cmt{font-size:11px;color:var(--mu);font-family:ui-monospace,Menlo,Consolas,monospace}
 .tb{flex-wrap:wrap}.tb .cm{flex-basis:100%}
+.dot{width:11px;height:11px;vertical-align:middle}
+.dot.g{background:#16a34a}.dot.y{background:#f59e0b}.dot.r{background:#dc2626}
 #hc,#lgc{position:fixed;z-index:20;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1100px,calc(100% - 24px));max-height:calc(100% - 40px);overflow:auto;display:none;padding-top:40px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
 #hc.open,#lgc.open{display:block}
 .hx{position:absolute;top:8px;right:12px;font-size:18px}
@@ -215,21 +217,23 @@ const vp=v=>String(v||"").replace(/^[^\d]*/,"").split(/[^\d]+/).filter(x=>x!==""
 const vcmp=(a,b)=>{const x=vp(a),y=vp(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0};
 const target=t=>recs.filter(r=>r.type===t&&r.version).reduce((m,r)=>!m||vcmp(r.version,m)>0?r.version:m,"");
 const onTarget=(s,t,e)=>{const g=target(t);return !!g&&recs.some(r=>r.site===s&&r.type===t&&r.status==="done"&&(!e||envOf(r)===e)&&vcmp(r.version,g)>=0)};
+const lastVer=t=>{const a=recs.filter(r=>r.type===t&&r.version).sort((x,y)=>String(y.ins||y.date).localeCompare(String(x.ins||x.date)));return a[0]?a[0].version:""};
 const nd=s=>SL.filter(([t,e])=>t==="restore"?recs.some(r=>r.site===s&&ry(r)):onTarget(s,t,e)).length;
-const dotc=s=>nd(s)===SL.length?"g":nd(s)===0?"r":"y";
+const dotc=s=>nd(s)===SL.length?"g":(nd(s)>0||recs.some(r=>r.site===s))?"y":"r";
+const dott=s=>({g:"เสร็จครบทุกช่อง",y:"ทำบางส่วน / มีแผนแล้ว",r:"ยังไม่มีข้อมูล"})[dotc(s)];
 const cls=(s,t,e)=>{const d=latestDone(s,t,e);if(!d)return nextPlan(s,t,e)?"pn":"nn";return (t==="restore"?ry(d):onTarget(s,t,e))?"dn":"ol"};
 function cell2(s,t){if(t==="restore")return `<div class="sub ${cls(s,t)}">${body(s,t)}</div>`;return ENVS.map(e=>`<div class="sub ${cls(s,t,e)}"><span class="env">${EN[e]}</span>${body(s,t,e)}</div>`).join("")}
-function body(s,t,e){const d=latestDone(s,t,e),n=nextPlan(s,t,e);return (d?cell(d):'<span class="none">ยังไม่มีข้อมูล</span>')+(d&&t!=="restore"&&!onTarget(s,t,e)?`<div class="old">ไม่ใช่เวอร์ชันล่าสุด (${esc(target(t))})</div>`:"")+(d&&t==="restore"&&!ry(d)?`<div class="old">ยังไม่ได้ทำในปี ${yr}</div>`:"")+(n?`<div style="margin-top:4px;font-size:12px"><span class="mu">ถัดไป:</span> ${n.version?esc(n.version)+" · ":""}${fd(n.date)}${n.commit?` <code class="cmt">#${esc(n.commit)}</code>`:""} ${ro()?`<span class="tag ${n.status}">${ST[n.status]}</span>`:`<select class="st ${n.status}" data-id="${n.id}" title="เปลี่ยนสถานะ">${Object.keys(ST).map(k=>`<option value="${k}" ${n.status===k?"selected":""}>${ST[k]}</option>`).join("")}</select>`}</div>`:"")}
+function body(s,t,e){const d=latestDone(s,t,e),n=nextPlan(s,t,e);return (d?cell(d):'<span class="none">ยังไม่มีข้อมูล</span>')+(d&&t==="restore"&&!ry(d)?`<div class="old">ยังไม่ได้ทำในปี ${yr}</div>`:"")+(n?`<div style="margin-top:4px;font-size:12px"><span class="mu">ถัดไป:</span> ${n.version?esc(n.version)+" · ":""}${fd(n.date)}${n.commit?` <code class="cmt">commit: ${esc(n.commit)}</code>`:""} ${ro()?`<span class="tag ${n.status}">${ST[n.status]}</span>`:`<select class="st ${n.status}" data-id="${n.id}" title="เปลี่ยนสถานะ">${Object.keys(ST).map(k=>`<option value="${k}" ${n.status===k?"selected":""}>${ST[k]}</option>`).join("")}</select>`}</div>`:"")}
 function latestDone(site,type,env){return recs.filter(r=>r.site===site&&r.type===type&&(!env||envOf(r)===env)&&r.status==="done").sort((a,b)=>b.date.localeCompare(a.date))[0]}
 function nextPlan(site,type,env){return recs.filter(r=>r.site===site&&r.type===type&&(!env||envOf(r)===env)&&r.status!=="done").sort((a,b)=>a.date.localeCompare(b.date))[0]}
 function cell(r,planned){
   if(!r)return'<span class="none">-</span>';
-  return`${r.version?`<b>${esc(r.version)}</b><br><span class="mu">${fd(r.date)}</span>`:`<b>${fd(r.date)}</b>`}${r.commit?`<br><code class="cmt">#${esc(r.commit)}</code>`:""}${planned?` <span class="tag ${r.status}">${ST[r.status]}</span>`:""}`;
+  return`${r.version?`<b>${esc(r.version)}</b><br><span class="mu">${fd(r.date)}</span>`:`<b>${fd(r.date)}</b>`}${r.commit?`<br><code class="cmt">commit: ${esc(r.commit)}</code>`:""}${planned?` <span class="tag ${r.status}">${ST[r.status]}</span>`:""}`;
 }
 function render(){renderLog();if(LM)try{localStorage.setItem("ptr",JSON.stringify(recs))}catch(e){}
   $("fc").style.display=ro()?"none":"";$("nw").style.display=ro()?"none":"";if(ro())nm(false);$("ro").style.display=ro()?"":"none";$("tg").textContent=SESS?("👤 "+USER+" · ออกจากระบบ"):"เข้าสู่ระบบ Admin";$("tg").href="#login";
   $("sl").innerHTML=[["ALL","ทั้งหมด",recs.length]].concat(SITES.map(s=>[s,s,recs.filter(r=>r.site===s).length]))
-    .map(([k,n,c])=>`<button class="si ${(k==="ALL"?!sel.length:sel.includes(k))?"on":""}" data-s="${k}"><span>${k==="ALL"?"":`<span class="dot ${dotc(k)}"></span>`}${n}</span></button>`).join("");
+    .map(([k,n,c])=>`<button class="si ${(k==="ALL"?!sel.length:sel.includes(k))?"on":""}" data-s="${k}"><span>${k==="ALL"?"":`<span class="dot ${dotc(k)}" title="${dott(k)}"></span>`}${n}</span></button>`).join("");
   const VS=()=>sel.length?SITES.filter(s=>sel.includes(s)):SITES;
 const sn=()=>sel.length>3?sel.length+" ไซต์":sel.join(", ");
 const cnt=(t,e)=>VS().filter(s=>latestDone(s,t,e)).length;
@@ -238,7 +242,7 @@ const cnt=(t,e)=>VS().filter(s=>latestDone(s,t,e)).length;
   $("sum").innerHTML=TYPES.map(t=>t==="restore"?["Restore data · ปี "+yr,VS().filter(s=>recs.some(r=>r.site===s&&ry(r))).length+" / "+VS().length+" ไซต์","รวม "+recs.filter(r=>VS().includes(r.site)&&ry(r)).length+" ครั้งในปีนี้"]:[TY[t]+" · Production",VS().filter(s=>onTarget(s,t,"production")).length+" / "+VS().length+" ไซต์",target(t)?"ล่าสุด "+target(t)+" · Staging "+VS().filter(s=>onTarget(s,t,"staging")).length+" / "+VS().length:"ยังไม่มีข้อมูล"]).concat([["รอดำเนินการ",pend+" รายการ"],["เลยกำหนด",late+" รายการ"]])
     .map(([l,v,x],i)=>{const p=String(v).split(" ");return `<div class="card sc" style="--c:${COL[i]}"><b${i===5&&+p[0]>0?' style="color:var(--bad)"':""}>${p[0]}<small> ${p.slice(1).join(" ")}</small></b><span>${l}</span>${x?`<em class="xs">${x}</em>`:""}${i<4?`<div class="bar"><i style="width:${(TYPES[i]==="restore"?VS().filter(s=>recs.some(r=>r.site===s&&ry(r))).length:VS().filter(s=>onTarget(s,TYPES[i],"production")).length)/VS().length*100}%"></i></div>`:""}</div>`}).join("");
   $("ov").innerHTML=`<tr><th>ไซต์</th>${TYPES.map(t=>`<th class="tc t-${t}">${TY[t]}</th>`).join("")}</tr>`+
-    VS().map(s=>`<tr class="click" data-s="${s}"><td><span class="dot ${dotc(s)}"></span><b>${s}</b> <span class="mu">${nd(s)}/${SL.length}</span></td>${TYPES.map(t=>`<td>${cell2(s,t)}</td>`).join("")}</tr>`).join("");
+    VS().map(s=>`<tr class="click" data-s="${s}"><td><span class="dot ${dotc(s)}" title="${dott(s)}"></span><b>${s}</b> <span class="mu">${nd(s)}/${SL.length}</span></td>${TYPES.map(t=>`<td>${cell2(s,t)}</td>`).join("")}</tr>`).join("");
   const list=recs.filter(r=>(!sel.length||sel.includes(r.site))&&(!F.t||r.type===F.t)&&(!F.e||envOf(r)===F.e)&&(!F.st||(F.st==="late"?(r.status!=="done"&&r.date<today()):r.status===F.st))&&(!F.from||r.date>=F.from)&&(!F.to||r.date<=F.to)&&(!F.q||[r.site,r.version,r.commit,r.note,r.by].join(" ").toLowerCase().includes(F.q.toLowerCase()))).sort((a,b)=>F.o==="date"?b.date.localeCompare(a.date)||String(b.ins||"").localeCompare(String(a.ins||"")):(a.ins&&b.ins)?b.ins.localeCompare(a.ins):a.ins?-1:b.ins?1:b.date.localeCompare(a.date));
   $("ht").textContent="ประวัติ"+(sel.length?" – "+sn():"ทั้งหมด");$("ot").textContent=sel.length?"ภาพรวม – "+sn():"ภาพรวมแต่ละไซต์";$("rc").textContent=list.length+" / "+recs.length+" รายการ";
   $("hist").innerHTML=`<tr><th>บันทึกเมื่อ</th><th>วันที่ทำงาน</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>Commit</th><th>สถานะ</th><th>ผู้ดำเนินการ</th><th>หมายเหตุ</th><th></th></tr>`+
