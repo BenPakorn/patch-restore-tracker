@@ -152,7 +152,97 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
 .xs{display:block;font-style:normal;font-size:11px;color:var(--mu);margin-top:2px}
 .ev{border:1px solid var(--bd);color:var(--pl)}
 .ev.production{background:var(--ac);color:var(--card);border-color:var(--ac)}
+/* ===== design pass ===== */
+:root{--bg:#eef2f7;--bd:#dfe5ee;--tx:#16233a;--mu:#6a778b;--ac:#1d4ed8;--acbg:#e8efff;--ok:#0e9f6e;--okbg:#dcf5ea;--wr:#c77700;--wrbg:#fdf0d5;--bad:#d1342a}
+body{font-family:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{grid-template-columns:232px minmax(0,1fr);gap:20px;padding:20px;max-width:1320px}
+.side,.card{border-radius:16px;border:1px solid var(--bd);box-shadow:0 1px 2px rgba(18,35,63,.04)}
+.side{position:sticky;top:16px;padding:14px}
+.side h3{font-size:12px;font-weight:600;color:var(--mu);margin:2px 8px 10px}
+.si{padding:9px 12px;border-radius:10px;transition:background .12s}
+.si.on{background:var(--acbg);box-shadow:inset 3px 0 0 var(--ac);color:var(--ac);font-weight:600}
+.top{background:#14233e;border-radius:16px;padding:16px 22px;box-shadow:none}
+.top h1{font-size:20px;font-weight:700;letter-spacing:0}
+.card h2{font-size:15px;font-weight:700;margin-bottom:12px}
+.main{gap:20px}
+/* summary strip: one connected scoreboard instead of loose cards */
+.sum{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--bd);border:1px solid var(--bd);border-radius:16px;overflow:hidden}
+.sum .sc{border:0;border-radius:0;box-shadow:none;background:var(--card);padding:16px 18px}
+.sc b{font-size:28px;font-weight:700;line-height:1.1}
+.sc b small{font-size:12px;font-weight:500}
+.sc span{display:block;margin-top:6px;font-size:12px;color:var(--mu);line-height:1.4}
+.sc em.xs{font-size:11.5px;margin-top:3px}
+.bar{height:5px;border-radius:3px;background:var(--plbg);margin-top:12px}
+.bar i{border-radius:3px}
+/* overview matrix */
+table{border-collapse:separate;border-spacing:0}
+th{background:transparent;color:var(--mu);font-size:12px;font-weight:600;padding:10px 12px;border-bottom:1px solid var(--bd)}
+th.tc{background:transparent;color:var(--tx);font-size:13px;font-weight:700;border-top:0;border-bottom:2px solid var(--c)}
+td{padding:12px;border-bottom:1px solid var(--bd)}
+#ov td:first-child{white-space:nowrap}
+#ov td:first-child b{font-size:16px;font-weight:700}
+tr.click:hover{background:color-mix(in srgb,var(--ac) 4%,transparent)}
+.sub{padding:9px 11px;border-radius:10px;margin:0 0 6px;background:var(--card);border:1px solid var(--bd);box-shadow:none}
+.sub.dn{background:color-mix(in srgb,var(--ok) 8%,var(--card));border-color:color-mix(in srgb,var(--ok) 30%,var(--bd));box-shadow:inset 3px 0 0 var(--ok)}
+.sub.pn,.sub.ol{background:color-mix(in srgb,var(--wr) 9%,var(--card));border-color:color-mix(in srgb,var(--wr) 32%,var(--bd));box-shadow:inset 3px 0 0 var(--wr)}
+.sub.nn{background:transparent;border-style:dashed;box-shadow:none}
+.env{text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;color:var(--mu);margin-bottom:2px}
+.sub.dn .env{color:var(--ok)}.sub.pn .env,.sub.ol .env{color:var(--wr)}
+.sub .none{font-size:12px;color:var(--mu)}
+.tag{font-size:11.5px;font-weight:600;padding:2px 9px}
+/* status lights */
+.dot{width:10px;height:10px;margin-right:8px}
+.dot.g{background:#16a34a;box-shadow:0 0 0 3px color-mix(in srgb,#16a34a 22%,transparent)}
+.dot.y{background:#f59e0b;box-shadow:0 0 0 3px color-mix(in srgb,#f59e0b 24%,transparent)}
+.dot.r{background:#dc2626;box-shadow:0 0 0 3px color-mix(in srgb,#dc2626 20%,transparent)}
+/* forms, filters, modals */
+input,select{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:8px 10px}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid color-mix(in srgb,var(--ac) 55%,transparent);outline-offset:1px}
+input:focus,select:focus{border-color:var(--ac)}
+button.pri{border-radius:10px;font-weight:600}
+.tb{border-radius:12px;padding:8px 10px}
+.tb:has(input:checked){border-color:var(--c,var(--ac));background:color-mix(in srgb,var(--c,var(--ac)) 9%,var(--card))}
+#bd{background:rgba(12,22,40,.5);backdrop-filter:blur(3px)}
+#fc,#lg,#cc,#hc,#lgc{border-radius:18px;border:1px solid var(--bd)}
+@keyframes pop{from{opacity:0;transform:translate(-50%,-48%) scale(.985)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+#fc.open,#lg.open,#cc.open,#hc.open,#lgc.open{animation:pop .16s ease-out}
+@media(prefers-reduced-motion:reduce){#fc.open,#lg.open,#cc.open,#hc.open,#lgc.open{animation:none}}
+@media(max-width:760px){.wrap{padding:12px;gap:12px}.side{position:static}}
+/* ===== design pass 2: matrix layout + record form ===== */
+#ov{table-layout:fixed;min-width:900px}
+#ov th:first-child{width:110px}#ov th:last-child{width:150px}
+.sub.nn{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px}
+.sub.nn .env{margin:0}
+#fc{width:min(860px,calc(100% - 24px));padding:22px 24px 20px}
+#fc>h2{font-size:18px;padding-bottom:14px;margin:0 0 16px;border-bottom:1px solid var(--bd)}
+#f{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 12px}
+#f>label{font-size:12px;font-weight:600;color:var(--mu);gap:6px}
+#f>label input,#f>label select{font-weight:400;color:var(--tx);font-size:14px;padding:9px 11px}
+#f>label:has(#fs){order:1}#f>label:has(#fd){order:2}#f>label:has(#fst){order:3}#f>label:has(#fb){order:4}
+#f>.wide:has(#tbs){order:5}#f>.wide:has(#ebs){order:6}#f>label.wide{order:7}#f>button.pri{order:8}
+#f>button.pri{grid-column:1/-1;justify-self:end;padding:10px 32px;margin-top:2px}
+#f .wide>span.mu{display:block;font-size:13px!important;font-weight:600;color:var(--tx);margin-bottom:8px}
+#f .wide>span.mu small{font-weight:400;color:var(--mu);font-size:12px;margin-left:4px}
+#tbs,#ebs{gap:10px}
+.tb{display:grid;grid-template-columns:1fr;gap:8px;align-items:center;padding:10px 12px;border:1px solid var(--bd);border-left:3px solid var(--c,var(--bd));border-radius:12px;background:var(--card);transition:background .12s,border-color .12s}
+.tb:hover{background:color-mix(in srgb,var(--c,var(--ac)) 5%,var(--card))}
+.tb label{grid-column:1/-1;display:flex;flex-direction:row;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--tx);cursor:pointer;white-space:nowrap}
+.tb>.mu{grid-column:1/-1;font-size:12px!important;margin:-4px 0 0 28px}
+.tb input.tv{display:none;width:100%;min-width:0;font-size:13px;padding:8px 10px}
+.tb:has(input[type=checkbox]:checked){grid-template-columns:1fr 1fr;border-color:var(--c,var(--ac));border-left-width:3px;background:color-mix(in srgb,var(--c,var(--ac)) 7%,var(--card))}
+.tb:has(input[type=checkbox]:checked) input.tv{display:block}
+#ebs .tb{border-left-color:var(--bd)}
+#ebs .tb:has(input[type=checkbox]:checked){border-left-color:var(--ac)}
+.tb input[type=checkbox]{appearance:none;-webkit-appearance:none;width:18px;height:18px;margin:0;padding:0;flex:none;border:1.5px solid color-mix(in srgb,var(--mu) 55%,transparent);border-radius:5px;background:var(--card);display:inline-grid;place-content:center;cursor:pointer}
+.tb input[type=checkbox]:checked{background:var(--c,var(--ac));border-color:var(--c,var(--ac))}
+.tb input[type=checkbox]:checked::after{content:"";width:9px;height:5px;border:2px solid #fff;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+@media(max-width:700px){#f{grid-template-columns:repeat(2,minmax(0,1fr))}#tbs,#ebs{grid-template-columns:1fr}}
+
+code.cmt{font-family:inherit}
+#f>label input,#f>label select{height:40px;box-sizing:border-box}
+#f>label.wide input{height:40px}
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 <div class="wrap">
@@ -164,7 +254,7 @@ button.pri{background:var(--ac);color:#fff;border:0;padding:9px 16px}
     <div class="card" id="fc"><h2 style="display:flex;justify-content:space-between;align-items:center">บันทึกรายการใหม่<button type="button" class="x" id="fx" style="font-size:18px">✕</button></h2>
       <form id="f">
         <label>ไซต์<select id="fs" required></select></label>
-        <div class="wide"><span class="mu" style="font-size:12px">ประเภทงาน (เลือกได้มากกว่า 1 อย่าง) และ version ของแต่ละอย่าง</span><div class="tbs" id="tbs"></div></div><div class="wide"><span class="mu" style="font-size:12px">สภาพแวดล้อมของ Patch (เลือกได้ทั้งสอง) — Restore data ไม่แยกสภาพแวดล้อม</span><div class="tbs" id="ebs" style="--c:var(--ac)"><div class="tb"><label><input type="checkbox" data-e="staging">Staging</label></div><div class="tb"><label><input type="checkbox" data-e="production" checked>Production</label></div></div></div>
+        <div class="wide"><span class="mu" style="font-size:12px">ประเภทงาน <small>เลือกได้มากกว่า 1 อย่าง แล้วใส่ version และ commit ของแต่ละอย่าง</small></span><div class="tbs" id="tbs"></div></div><div class="wide"><span class="mu" style="font-size:12px">สภาพแวดล้อมของ Patch <small>เลือกได้ทั้งสอง (Restore data ไม่แยกสภาพแวดล้อม)</small></span><div class="tbs" id="ebs" style="--c:var(--ac)"><div class="tb"><label><input type="checkbox" data-e="staging">Staging</label></div><div class="tb"><label><input type="checkbox" data-e="production" checked>Production</label></div></div></div>
         
         <label>วันที่<input id="fd" type="date" required></label>
         <label>สถานะ<select id="fst"><option value="plan">วางแผน</option><option value="doing">กำลังทำ</option><option value="done">เสร็จแล้ว</option></select></label>
@@ -233,7 +323,7 @@ function cell(r,planned){
 function render(){renderLog();if(LM)try{localStorage.setItem("ptr",JSON.stringify(recs))}catch(e){}
   $("fc").style.display=ro()?"none":"";$("nw").style.display=ro()?"none":"";if(ro())nm(false);$("ro").style.display=ro()?"":"none";$("tg").textContent=SESS?("👤 "+USER+" · ออกจากระบบ"):"เข้าสู่ระบบ Admin";$("tg").href="#login";
   $("sl").innerHTML=[["ALL","ทั้งหมด",recs.length]].concat(SITES.map(s=>[s,s,recs.filter(r=>r.site===s).length]))
-    .map(([k,n,c])=>`<button class="si ${(k==="ALL"?!sel.length:sel.includes(k))?"on":""}" data-s="${k}"><span>${k==="ALL"?"":`<span class="dot ${dotc(k)}" title="${dott(k)}"></span>`}${n}</span></button>`).join("");
+    .map(([k,n,c])=>`<button class="si ${(k==="ALL"?!sel.length:sel.includes(k))?"on":""}" data-s="${k}"><span>${n}</span></button>`).join("");
   const VS=()=>sel.length?SITES.filter(s=>sel.includes(s)):SITES;
 const sn=()=>sel.length>3?sel.length+" ไซต์":sel.join(", ");
 const cnt=(t,e)=>VS().filter(s=>latestDone(s,t,e)).length;
@@ -242,7 +332,7 @@ const cnt=(t,e)=>VS().filter(s=>latestDone(s,t,e)).length;
   $("sum").innerHTML=TYPES.map(t=>t==="restore"?["Restore data · ปี "+yr,VS().filter(s=>recs.some(r=>r.site===s&&ry(r))).length+" / "+VS().length+" ไซต์","รวม "+recs.filter(r=>VS().includes(r.site)&&ry(r)).length+" ครั้งในปีนี้"]:[TY[t]+" · Production",cnt(t,"production")+" / "+VS().length+" ไซต์",(lastVer(t)?"ล่าสุด "+lastVer(t)+" · ":"")+"Staging "+cnt(t,"staging")+" / "+VS().length]).concat([["รอดำเนินการ",pend+" รายการ"],["เลยกำหนด",late+" รายการ"]])
     .map(([l,v,x],i)=>{const p=String(v).split(" ");return `<div class="card sc" style="--c:${COL[i]}"><b${i===5&&+p[0]>0?' style="color:var(--bad)"':""}>${p[0]}<small> ${p.slice(1).join(" ")}</small></b><span>${l}</span>${x?`<em class="xs">${x}</em>`:""}${i<4?`<div class="bar"><i style="width:${(TYPES[i]==="restore"?VS().filter(s=>recs.some(r=>r.site===s&&ry(r))).length:cnt(TYPES[i],"production"))/VS().length*100}%"></i></div>`:""}</div>`}).join("");
   $("ov").innerHTML=`<tr><th>ไซต์</th>${TYPES.map(t=>`<th class="tc t-${t}">${TY[t]}</th>`).join("")}</tr>`+
-    VS().map(s=>`<tr class="click" data-s="${s}"><td><span class="dot ${dotc(s)}" title="${dott(s)}"></span><b>${s}</b> <span class="mu">${nd(s)}/${SL.length}</span></td>${TYPES.map(t=>`<td>${cell2(s,t)}</td>`).join("")}</tr>`).join("");
+    VS().map(s=>`<tr class="click" data-s="${s}"><td><b>${s}</b></td>${TYPES.map(t=>`<td>${cell2(s,t)}</td>`).join("")}</tr>`).join("");
   const list=recs.filter(r=>(!sel.length||sel.includes(r.site))&&(!F.t||r.type===F.t)&&(!F.e||envOf(r)===F.e)&&(!F.st||(F.st==="late"?(r.status!=="done"&&r.date<today()):r.status===F.st))&&(!F.from||r.date>=F.from)&&(!F.to||r.date<=F.to)&&(!F.q||[r.site,r.version,r.commit,r.note,r.by].join(" ").toLowerCase().includes(F.q.toLowerCase()))).sort((a,b)=>F.o==="date"?b.date.localeCompare(a.date)||String(b.ins||"").localeCompare(String(a.ins||"")):(a.ins&&b.ins)?b.ins.localeCompare(a.ins):a.ins?-1:b.ins?1:b.date.localeCompare(a.date));
   $("ht").textContent="ประวัติ"+(sel.length?" – "+sn():"ทั้งหมด");$("ot").textContent=sel.length?"ภาพรวม – "+sn():"ภาพรวมแต่ละไซต์";$("rc").textContent=list.length+" / "+recs.length+" รายการ";
   $("hist").innerHTML=`<tr><th>บันทึกเมื่อ</th><th>วันที่ทำงาน</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>Commit</th><th>สถานะ</th><th>ผู้ดำเนินการ</th><th>หมายเหตุ</th><th></th></tr>`+
