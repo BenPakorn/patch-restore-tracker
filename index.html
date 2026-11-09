@@ -241,6 +241,14 @@ button.pri{border-radius:10px;font-weight:600}
 code.cmt{font-family:inherit}
 #f>label input,#f>label select{height:40px;box-sizing:border-box}
 #f>label.wide input{height:40px}
+/* ===== branch + labelled fields ===== */
+.tb .ig{display:none;align-items:center;gap:6px;border:1px solid var(--bd);border-radius:10px;background:var(--card);padding:0 4px 0 11px;min-width:0}
+.tb:has(input[type=checkbox]:checked) .ig{display:flex}
+.tb .ig.cm{grid-column:1/-1}
+.tb .ig span{font-size:12px;font-weight:600;color:var(--mu);white-space:nowrap}
+.tb .ig input.tv{display:block;border:0;background:transparent;border-radius:0;padding:9px 8px 9px 2px;flex:1;min-width:0;height:auto;font-size:13px}
+.tb .ig input.tv:focus,.tb .ig input.tv:focus-visible{outline:none}
+.tb .ig:focus-within{border-color:var(--ac);outline:2px solid color-mix(in srgb,var(--ac) 40%,transparent);outline-offset:1px}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -264,7 +272,7 @@ code.cmt{font-family:inherit}
       </form>
     </div>
     <div class="card" id="hc"><button type="button" class="x hx" data-close="1">✕</button><h2 id="ht">ประวัติทั้งหมด</h2>
-      <div class="fl"><input data-f="q" placeholder="ค้นหา version / commit / หมายเหตุ / ผู้ดำเนินการ">
+      <div class="fl"><input data-f="q" placeholder="ค้นหา version / branch / commit / หมายเหตุ / ผู้ดำเนินการ">
         <select data-f="t"><option value="">ทุกประเภท</option><option value="web">Patch Web</option><option value="api">Patch API</option><option value="medcer">Patch Medcer</option><option value="restore">Restore data</option></select>
         <select data-f="e"><option value="">ทุกสภาพแวดล้อม</option><option value="staging">Staging</option><option value="production">Production</option></select>
         <select data-f="st"><option value="">ทุกสถานะ</option><option value="plan">วางแผน</option><option value="doing">กำลังทำ</option><option value="done">เสร็จแล้ว</option><option value="late">เลยกำหนด</option></select>
@@ -294,8 +302,8 @@ const fd=d=>{if(!d)return"-";const[y,m,x]=d.split("-");return x+"/"+m+"/"+y};
 const today=()=>new Date().toISOString().slice(0,10);
 const fi=r=>{if(!r.ins)return"-";const d=new Date(r.ins);if(isNaN(d))return"-";const p=n=>String(n).padStart(2,"0");return p(d.getDate())+"/"+p(d.getMonth()+1)+"/"+d.getFullYear()+" "+p(d.getHours())+":"+p(d.getMinutes())};
 $("fd").value=today();
-$("tbs").innerHTML=TYPES.map(t=>`<div class="tb t-${t}"><label><input type="checkbox" data-t="${t}">${TY[t]}</label>${t==="restore"?'<span class="mu" style="font-size:12px">ไม่ต้องใส่ version</span>':`<input class="tv" data-v="${t}" placeholder="เช่น 5.2.1" disabled><input class="tv cm" data-c="${t}" placeholder="เลข commit (ไม่บังคับ)" disabled>`}</div>`).join("");
-document.addEventListener("change",e=>{const t=e.target.dataset&&e.target.dataset.t;if(!t)return;const v=document.querySelector('[data-v="'+t+'"]');if(!v)return;v.disabled=!e.target.checked;{const c=document.querySelector('[data-c="'+t+'"]');if(c)c.disabled=!e.target.checked}if(e.target.checked)v.focus()});
+$("tbs").innerHTML=TYPES.map(t=>`<div class="tb t-${t}"><label><input type="checkbox" data-t="${t}">${TY[t]}</label>${t==="restore"?'<span class="mu" style="font-size:12px">ไม่ต้องใส่ version</span>':`<div class="ig"><span>Version:</span><input class="tv" data-v="${t}" placeholder="2.4.3" disabled></div><div class="ig"><span>Branch:</span><input class="tv" data-b="${t}" placeholder="release_v2.4" disabled></div><div class="ig cm"><span>commit:</span><input class="tv" data-c="${t}" placeholder="4cad7c919" disabled></div>`}</div>`).join("");
+document.addEventListener("change",e=>{const t=e.target.dataset&&e.target.dataset.t;if(!t)return;const v=document.querySelector('[data-v="'+t+'"]');if(!v)return;v.disabled=!e.target.checked;document.querySelectorAll('[data-b="'+t+'"],[data-c="'+t+'"]').forEach(c=>{c.disabled=!e.target.checked});if(e.target.checked)v.focus()});
 $("fs").innerHTML=SITES.map(s=>`<option>${s}</option>`).join("");
 
 function msg(t){let b=$("toast");if(!b){b=document.createElement("div");b.id="toast";b.style.cssText="position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1b2430;color:#fff;padding:10px 16px;border-radius:10px;z-index:30;font-size:13px;max-width:90%";document.body.appendChild(b)}b.textContent=t;b.style.display="block";clearTimeout(b._t);b._t=setTimeout(()=>b.style.display="none",4000)}
@@ -307,18 +315,20 @@ const vp=v=>String(v||"").replace(/^[^\d]*/,"").split(/[^\d]+/).filter(x=>x!==""
 const vcmp=(a,b)=>{const x=vp(a),y=vp(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0};
 const target=t=>recs.filter(r=>r.type===t&&r.version).reduce((m,r)=>!m||vcmp(r.version,m)>0?r.version:m,"");
 const onTarget=(s,t,e)=>{const g=target(t);return !!g&&recs.some(r=>r.site===s&&r.type===t&&r.status==="done"&&(!e||envOf(r)===e)&&vcmp(r.version,g)>=0)};
+const vn=v=>String(v||"").replace(/^version[:\s]*/i,"").trim();
+const meta=r=>(r.branch?`<br><code class="cmt">Branch: ${esc(r.branch)}</code>`:"")+(r.commit?`<br><code class="cmt">commit: ${esc(r.commit)}</code>`:"");
 const lastVer=t=>{const a=recs.filter(r=>r.type===t&&r.version).sort((x,y)=>String(y.ins||y.date).localeCompare(String(x.ins||x.date)));return a[0]?a[0].version:""};
 const nd=s=>SL.filter(([t,e])=>t==="restore"?recs.some(r=>r.site===s&&ry(r)):!!latestDone(s,t,e)).length;
 const dotc=s=>nd(s)===SL.length?"g":(nd(s)>0||recs.some(r=>r.site===s))?"y":"r";
 const dott=s=>({g:"เสร็จครบทุกช่อง",y:"ทำบางส่วน / มีแผนแล้ว",r:"ยังไม่มีข้อมูล"})[dotc(s)];
 const cls=(s,t,e)=>{const d=latestDone(s,t,e);if(!d)return nextPlan(s,t,e)?"pn":"nn";return (t==="restore"&&!ry(d))?"ol":"dn"};
 function cell2(s,t){if(t==="restore")return `<div class="sub ${cls(s,t)}">${body(s,t)}</div>`;return ENVS.map(e=>`<div class="sub ${cls(s,t,e)}"><span class="env">${EN[e]}</span>${body(s,t,e)}</div>`).join("")}
-function body(s,t,e){const d=latestDone(s,t,e),n=nextPlan(s,t,e);return (d?cell(d):'<span class="none">ยังไม่มีข้อมูล</span>')+(d&&t==="restore"&&!ry(d)?`<div class="old">ยังไม่ได้ทำในปี ${yr}</div>`:"")+(n?`<div style="margin-top:4px;font-size:12px"><span class="mu">ถัดไป:</span> ${n.version?esc(n.version)+" · ":""}${fd(n.date)}${n.commit?`<br><code class="cmt">commit: ${esc(n.commit)}</code>`:""} ${ro()?`<span class="tag ${n.status}">${ST[n.status]}</span>`:`<select class="st ${n.status}" data-id="${n.id}" title="เปลี่ยนสถานะ">${Object.keys(ST).map(k=>`<option value="${k}" ${n.status===k?"selected":""}>${ST[k]}</option>`).join("")}</select>`}</div>`:"")}
+function body(s,t,e){const d=latestDone(s,t,e),n=nextPlan(s,t,e);return (d?cell(d):'<span class="none">ยังไม่มีข้อมูล</span>')+(d&&t==="restore"&&!ry(d)?`<div class="old">ยังไม่ได้ทำในปี ${yr}</div>`:"")+(n?`<div style="margin-top:4px;font-size:12px"><span class="mu">ถัดไป:</span> ${n.version?"Version: "+esc(vn(n.version))+" · ":""}${fd(n.date)}${meta(n)} ${ro()?`<span class="tag ${n.status}">${ST[n.status]}</span>`:`<select class="st ${n.status}" data-id="${n.id}" title="เปลี่ยนสถานะ">${Object.keys(ST).map(k=>`<option value="${k}" ${n.status===k?"selected":""}>${ST[k]}</option>`).join("")}</select>`}</div>`:"")}
 function latestDone(site,type,env){return recs.filter(r=>r.site===site&&r.type===type&&(!env||envOf(r)===env)&&r.status==="done").sort((a,b)=>b.date.localeCompare(a.date))[0]}
 function nextPlan(site,type,env){return recs.filter(r=>r.site===site&&r.type===type&&(!env||envOf(r)===env)&&r.status!=="done").sort((a,b)=>a.date.localeCompare(b.date))[0]}
 function cell(r,planned){
   if(!r)return'<span class="none">-</span>';
-  return`${r.version?`<b>${esc(r.version)}</b><br><span class="mu">${fd(r.date)}</span>`:`<b>${fd(r.date)}</b>`}${r.commit?`<br><code class="cmt">commit: ${esc(r.commit)}</code>`:""}${planned?` <span class="tag ${r.status}">${ST[r.status]}</span>`:""}`;
+  return`${r.version?`<b>Version: ${esc(vn(r.version))}</b><br><span class="mu">${fd(r.date)}</span>`:`<b>${fd(r.date)}</b>`}${meta(r)}${planned?` <span class="tag ${r.status}">${ST[r.status]}</span>`:""}`;
 }
 function render(){renderLog();if(LM)try{localStorage.setItem("ptr",JSON.stringify(recs))}catch(e){}
   $("fc").style.display=ro()?"none":"";$("nw").style.display=ro()?"none":"";if(ro())nm(false);$("ro").style.display=ro()?"":"none";$("tg").textContent=SESS?("👤 "+USER+" · ออกจากระบบ"):"เข้าสู่ระบบ Admin";$("tg").href="#login";
@@ -333,12 +343,12 @@ const cnt=(t,e)=>VS().filter(s=>latestDone(s,t,e)).length;
     .map(([l,v,x],i)=>{const p=String(v).split(" ");return `<div class="card sc" style="--c:${COL[i]}"><b${i===5&&+p[0]>0?' style="color:var(--bad)"':""}>${p[0]}<small> ${p.slice(1).join(" ")}</small></b><span>${l}</span>${x?`<em class="xs">${x}</em>`:""}${i<4?`<div class="bar"><i style="width:${(TYPES[i]==="restore"?VS().filter(s=>recs.some(r=>r.site===s&&ry(r))).length:cnt(TYPES[i],"production"))/VS().length*100}%"></i></div>`:""}</div>`}).join("");
   $("ov").innerHTML=`<tr><th>ไซต์</th>${TYPES.map(t=>`<th class="tc t-${t}">${TY[t]}</th>`).join("")}</tr>`+
     VS().map(s=>`<tr class="click" data-s="${s}"><td><b>${s}</b></td>${TYPES.map(t=>`<td>${cell2(s,t)}</td>`).join("")}</tr>`).join("");
-  const list=recs.filter(r=>(!sel.length||sel.includes(r.site))&&(!F.t||r.type===F.t)&&(!F.e||envOf(r)===F.e)&&(!F.st||(F.st==="late"?(r.status!=="done"&&r.date<today()):r.status===F.st))&&(!F.from||r.date>=F.from)&&(!F.to||r.date<=F.to)&&(!F.q||[r.site,r.version,r.commit,r.note,r.by].join(" ").toLowerCase().includes(F.q.toLowerCase()))).sort((a,b)=>F.o==="date"?b.date.localeCompare(a.date)||String(b.ins||"").localeCompare(String(a.ins||"")):(a.ins&&b.ins)?b.ins.localeCompare(a.ins):a.ins?-1:b.ins?1:b.date.localeCompare(a.date));
+  const list=recs.filter(r=>(!sel.length||sel.includes(r.site))&&(!F.t||r.type===F.t)&&(!F.e||envOf(r)===F.e)&&(!F.st||(F.st==="late"?(r.status!=="done"&&r.date<today()):r.status===F.st))&&(!F.from||r.date>=F.from)&&(!F.to||r.date<=F.to)&&(!F.q||[r.site,r.version,r.branch,r.commit,r.note,r.by].join(" ").toLowerCase().includes(F.q.toLowerCase()))).sort((a,b)=>F.o==="date"?b.date.localeCompare(a.date)||String(b.ins||"").localeCompare(String(a.ins||"")):(a.ins&&b.ins)?b.ins.localeCompare(a.ins):a.ins?-1:b.ins?1:b.date.localeCompare(a.date));
   $("ht").textContent="ประวัติ"+(sel.length?" – "+sn():"ทั้งหมด");$("ot").textContent=sel.length?"ภาพรวม – "+sn():"ภาพรวมแต่ละไซต์";$("rc").textContent=list.length+" / "+recs.length+" รายการ";
-  $("hist").innerHTML=`<tr><th>บันทึกเมื่อ</th><th>วันที่ทำงาน</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>Commit</th><th>สถานะ</th><th>ผู้ดำเนินการ</th><th>หมายเหตุ</th><th></th></tr>`+
-    (list.length?list.map(r=>`<tr><td class="mu" style="white-space:nowrap">${fi(r)}</td><td class="${r.status!=="done"&&r.date<today()?"od":""}">${fd(r.date)}</td><td><b>${esc(r.site)}</b></td><td><span class="tag tt t-${r.type}">${TY[r.type]}</span>${envOf(r)?` <span class="tag ev ${envOf(r)}">${EN[envOf(r)]}</span>`:""}</td><td>${r.version?`<b>${esc(r.version)}</b>`:'<span class="mu">-</span>'}</td><td class="cmt">${r.commit?esc(r.commit):"-"}</td>
+  $("hist").innerHTML=`<tr><th>บันทึกเมื่อ</th><th>วันที่ทำงาน</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>Branch</th><th>Commit</th><th>สถานะ</th><th>ผู้ดำเนินการ</th><th>หมายเหตุ</th><th></th></tr>`+
+    (list.length?list.map(r=>`<tr><td class="mu" style="white-space:nowrap">${fi(r)}</td><td class="${r.status!=="done"&&r.date<today()?"od":""}">${fd(r.date)}</td><td><b>${esc(r.site)}</b></td><td><span class="tag tt t-${r.type}">${TY[r.type]}</span>${envOf(r)?` <span class="tag ev ${envOf(r)}">${EN[envOf(r)]}</span>`:""}</td><td>${r.version?`<b>${esc(vn(r.version))}</b>`:'<span class="mu">-</span>'}</td><td class="cmt">${r.branch?esc(r.branch):"-"}</td><td class="cmt">${r.commit?esc(r.commit):"-"}</td>
     <td>${ro()?`<span class="tag ${r.status}">${ST[r.status]}</span>`:`<select class="st ${r.status}" data-id="${r.id}">${Object.keys(ST).map(k=>`<option value="${k}" ${r.status===k?"selected":""}>${ST[k]}</option>`).join("")}</select>`}</td>
-    <td>${esc(r.by)}</td><td>${esc(r.note)}</td><td>${ro()?"":`<button class="x" data-cx="${r.id}">ยกเลิก</button>`}</td></tr>`).join(""):`<tr><td colspan="10" class="none">ยังไม่มีรายการ</td></tr>`);
+    <td>${esc(r.by)}</td><td>${esc(r.note)}</td><td>${ro()?"":`<button class="x" data-cx="${r.id}">ยกเลิก</button>`}</td></tr>`).join(""):`<tr><td colspan="11" class="none">ยังไม่มีรายการ</td></tr>`);
 }
 document.addEventListener("click",e=>{
   const s=e.target.closest("select")?null:e.target.closest("[data-s]");if(s){const k=s.dataset.s;
@@ -360,10 +370,10 @@ $("f").addEventListener("submit",e=>{
   if(!picked.length){msg("กรุณาเลือกประเภทงานอย่างน้อย 1 อย่าง");return}
   const envs=ENVS.filter(e=>document.querySelector('[data-e="'+e+'"]').checked);
   if(picked.some(t=>t!=="restore")&&!envs.length){msg("กรุณาเลือก Staging หรือ Production อย่างน้อย 1 อย่าง");return}
-  const rs=[];picked.forEach(t=>{const version=t==="restore"?"":document.querySelector('[data-v="'+t+'"]').value.trim();const commit=t==="restore"?"":document.querySelector('[data-c="'+t+'"]').value.trim();if(t==="restore")rs.push(Object.assign({type:t,version},base));else envs.forEach(e=>rs.push(Object.assign({type:t,env:e,version,commit},base)))});
+  const rs=[];picked.forEach(t=>{const version=t==="restore"?"":document.querySelector('[data-v="'+t+'"]').value.trim();const commit=t==="restore"?"":document.querySelector('[data-c="'+t+'"]').value.trim();const branch=t==="restore"?"":document.querySelector('[data-b="'+t+'"]').value.trim();if(t==="restore")rs.push(Object.assign({type:t,version},base));else envs.forEach(e=>rs.push(Object.assign({type:t,env:e,version,branch,commit},base)))});
   if(rs.some(x=>x.type!=="restore"&&!x.version)){msg("กรุณากรอก version ให้ครบทุก Patch ที่เลือก");return}
   rs.forEach((r,i)=>{r.ins=new Date(Date.now()+i).toISOString();if(col)col.add(r).catch(err=>msg("บันทึกไม่สำเร็จ: "+((err&&err.message)||err)));else{r.id="l"+Date.now()+i;recs.push(r)}});if(!col)render();
-  document.querySelectorAll("[data-t]").forEach(c=>c.checked=false);document.querySelectorAll("[data-v],[data-c]").forEach(v=>{v.value="";v.disabled=true});$("fn").value="";nm(false);msg("บันทึกแล้ว "+rs.length+" รายการ");
+  document.querySelectorAll("[data-t]").forEach(c=>c.checked=false);document.querySelectorAll("[data-v],[data-b],[data-c]").forEach(v=>{v.value="";v.disabled=true});$("fn").value="";nm(false);msg("บันทึกแล้ว "+rs.length+" รายการ");
 });
 $("mode").textContent="กำลังเชื่อมต่อ…";
 const PANELS=["fc","lg","cc","hc","lgc"];
@@ -377,8 +387,8 @@ $("bh").addEventListener("click",()=>hm(true));
 $("bl").addEventListener("click",()=>gm(true));
 document.addEventListener("click",e=>{if(e.target.closest("[data-close]")){hm(false);gm(false)}});
 let cid="";
-document.addEventListener("click",e=>{const c=e.target.closest("[data-cx]");if(!c)return;cid=c.dataset.cx;const r=recs.find(x=>x.id===cid)||{};$("ci").textContent=[r.site,TY[r.type],envOf(r)?EN[envOf(r)]:"",r.version,fd(r.date)].filter(Boolean).join(" · ");$("cr").value="";$("ce").textContent="";cm(true)});
-function renderLog(){const L=logs.filter(l=>!sel.length||sel.includes(l.site));$("lc").textContent="("+L.length+" รายการ)";$("blc").textContent=L.length;$("bhc").textContent=recs.filter(r=>!sel.length||sel.includes(r.site)).length;$("lgt").innerHTML='<tr><th>ยกเลิกเมื่อ</th><th>โดย</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>Commit</th><th>วันที่ทำงาน</th><th>สถานะเดิม</th><th>เหตุผล</th></tr>'+(L.length?L.map(l=>`<tr><td class="mu" style="white-space:nowrap">${fi({ins:l.logAt})}</td><td>${esc(l.user)}</td><td><b>${esc(l.site)}</b></td><td>${esc(TY[l.type]||l.type)}${envOf(l)?" · "+EN[envOf(l)]:""}</td><td>${esc(l.version)||"-"}</td><td class="cmt">${esc(l.commit)||"-"}</td><td>${fd(l.date)}</td><td>${esc(ST[l.status]||l.status)}</td><td>${esc(l.reason)}</td></tr>`).join(""):'<tr><td colspan="9" class="none">ยังไม่มีการยกเลิก</td></tr>')}
+document.addEventListener("click",e=>{const c=e.target.closest("[data-cx]");if(!c)return;cid=c.dataset.cx;const r=recs.find(x=>x.id===cid)||{};$("ci").textContent=[r.site,TY[r.type],envOf(r)?EN[envOf(r)]:"",r.version?"Version: "+vn(r.version):"",fd(r.date)].filter(Boolean).join(" · ");$("cr").value="";$("ce").textContent="";cm(true)});
+function renderLog(){const L=logs.filter(l=>!sel.length||sel.includes(l.site));$("lc").textContent="("+L.length+" รายการ)";$("blc").textContent=L.length;$("bhc").textContent=recs.filter(r=>!sel.length||sel.includes(r.site)).length;$("lgt").innerHTML='<tr><th>ยกเลิกเมื่อ</th><th>โดย</th><th>ไซต์</th><th>ประเภท</th><th>Version</th><th>Branch</th><th>Commit</th><th>วันที่ทำงาน</th><th>สถานะเดิม</th><th>เหตุผล</th></tr>'+(L.length?L.map(l=>`<tr><td class="mu" style="white-space:nowrap">${fi({ins:l.logAt})}</td><td>${esc(l.user)}</td><td><b>${esc(l.site)}</b></td><td>${esc(TY[l.type]||l.type)}${envOf(l)?" · "+EN[envOf(l)]:""}</td><td>${esc(vn(l.version))||"-"}</td><td class="cmt">${esc(l.branch)||"-"}</td><td class="cmt">${esc(l.commit)||"-"}</td><td>${fd(l.date)}</td><td>${esc(ST[l.status]||l.status)}</td><td>${esc(l.reason)}</td></tr>`).join(""):'<tr><td colspan="10" class="none">ยังไม่มีการยกเลิก</td></tr>')}
 addEventListener("hashchange",render);
 $("nw").addEventListener("click",()=>nm(true));$("fx").addEventListener("click",()=>nm(false));$("bd").addEventListener("click",()=>nm(false));
 addEventListener("keydown",e=>{if(e.key==="Escape"){nm(false);lm(false);cm(false);hm(false);gm(false)}});
@@ -390,7 +400,7 @@ $("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");documen
   const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const nd=v=>{v=String(v||"");if(/^\d{4}-\d{2}-\d{2}/.test(v))return v.slice(0,10);const m=v.match(/^\w{3} (\w{3}) (\d{1,2}) (\d{4})/);return m?m[3]+"-"+String(MON.indexOf(m[1])+1).padStart(2,"0")+"-"+m[2].padStart(2,"0"):v};
   const ni=v=>{v=String(v||"");if(!v||/^\d{4}-\d{2}-\d{2}T/.test(v))return v;const d=new Date(v);return isNaN(d)?v:d.toISOString()};
-  const fix=r=>Object.assign(r,{date:nd(r.date),ins:ni(r.ins),version:String(r.version||"").trim(),commit:String(r.commit||"").trim()});
+  const fix=r=>Object.assign(r,{date:nd(r.date),ins:ni(r.ins),version:String(r.version||"").trim(),commit:String(r.commit||"").trim(),branch:String(r.branch||"").trim()});
   const post=o=>{busy++;return fetch(API,{method:"POST",body:JSON.stringify(Object.assign({token:TOKEN,session:SESS},o))}).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");return j}).finally(()=>{busy--})};
   const load=()=>{if(busy)return Promise.resolve();return fetch(API+"?token="+encodeURIComponent(TOKEN)).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");recs=j.rows.map(fix);const d=new Date(),p=n=>String(n).padStart(2,"0");$("mode").textContent="Google Sheets · อัปเดต "+p(d.getHours())+":"+p(d.getMinutes())+(VW?" · ⚠ สคริปต์เป็นเวอร์ชันเก่า":"");render();return fetch(API+"?token="+encodeURIComponent(TOKEN)+"&what=log").then(r=>r.json()).then(k=>{if(k.ok){logs=k.rows.map(fix).sort((a,b)=>String(b.logAt).localeCompare(String(a.logAt)));render()}})}).catch(e=>{$("mode").textContent="เชื่อมต่อไม่สำเร็จ: "+(e.message==="unauthorized"?"รหัส TOKEN ไม่ถูกต้อง":e.message)})};
   const safe=p=>p.then(load).catch(e=>{load();if(e.message==="login required"){setSess("","");e=new Error("เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่")}throw e});
@@ -411,7 +421,7 @@ $("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");documen
   $("cn").addEventListener("click",()=>cm(false));
   $("cb").addEventListener("click",()=>{const why=$("cr").value.trim();if(!why){$("ce").textContent="กรุณาระบุเหตุผล";return}cm(false);col.doc(cid).cancel(why).then(()=>msg("ยกเลิกรายการแล้ว และบันทึกลง log")).catch(err=>msg("ยกเลิกไม่สำเร็จ: "+((err&&err.message)||err)))});
   if(TOKEN.indexOf("ใส่รหัส")===0){$("mode").textContent="ยังไม่ได้ตั้งค่า TOKEN ในไฟล์ index.html";return}
-  fetch(API+"?token="+encodeURIComponent(TOKEN)+"&what=ver").then(r=>r.json()).then(j=>{VW=j.ver!=="admin-v3";if(VW)msg("⚠ สคริปต์บน Google ยังเป็นเวอร์ชันเก่า (ยังไม่เก็บเลข commit) วางโค้ด Code.gs ล่าสุด กด Save แล้ว Deploy เป็น New version")}).catch(()=>{}).then(()=>{load();setInterval(load,30000)});
+  fetch(API+"?token="+encodeURIComponent(TOKEN)+"&what=ver").then(r=>r.json()).then(j=>{VW=j.ver!=="admin-v4";if(VW)msg("⚠ สคริปต์บน Google ยังเป็นเวอร์ชันเก่า (ยังไม่เก็บ Branch และ commit) วางโค้ด Code.gs ล่าสุด กด Save แล้ว Deploy เป็น New version")}).catch(()=>{}).then(()=>{load();setInterval(load,30000)});
 })();
 render();
 </script>
