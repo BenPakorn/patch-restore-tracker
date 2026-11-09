@@ -292,13 +292,13 @@ $("bd").addEventListener("click",()=>{lm(false);cm(false);hm(false);gm(false)});
 document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.f;if(!k)return;F[k]=e.target.value;render()});
 $("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");document.querySelectorAll("[data-f]").forEach(i=>i.value="");render()});
 (()=>{
-  let busy=0;
+  let busy=0,VW=false;
   const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const nd=v=>{v=String(v||"");if(/^\d{4}-\d{2}-\d{2}/.test(v))return v.slice(0,10);const m=v.match(/^\w{3} (\w{3}) (\d{1,2}) (\d{4})/);return m?m[3]+"-"+String(MON.indexOf(m[1])+1).padStart(2,"0")+"-"+m[2].padStart(2,"0"):v};
   const ni=v=>{v=String(v||"");if(!v||/^\d{4}-\d{2}-\d{2}T/.test(v))return v;const d=new Date(v);return isNaN(d)?v:d.toISOString()};
   const fix=r=>Object.assign(r,{date:nd(r.date),ins:ni(r.ins),version:String(r.version||"")});
   const post=o=>{busy++;return fetch(API,{method:"POST",body:JSON.stringify(Object.assign({token:TOKEN,session:SESS},o))}).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");return j}).finally(()=>{busy--})};
-  const load=()=>{if(busy)return Promise.resolve();return fetch(API+"?token="+encodeURIComponent(TOKEN)).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");recs=j.rows.map(fix);const d=new Date(),p=n=>String(n).padStart(2,"0");$("mode").textContent="Google Sheets · อัปเดต "+p(d.getHours())+":"+p(d.getMinutes());render();return fetch(API+"?token="+encodeURIComponent(TOKEN)+"&what=log").then(r=>r.json()).then(k=>{if(k.ok){logs=k.rows.map(fix).sort((a,b)=>String(b.logAt).localeCompare(String(a.logAt)));render()}})}).catch(e=>{$("mode").textContent="เชื่อมต่อไม่สำเร็จ: "+(e.message==="unauthorized"?"รหัส TOKEN ไม่ถูกต้อง":e.message)})};
+  const load=()=>{if(busy)return Promise.resolve();return fetch(API+"?token="+encodeURIComponent(TOKEN)).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"error");recs=j.rows.map(fix);const d=new Date(),p=n=>String(n).padStart(2,"0");$("mode").textContent="Google Sheets · อัปเดต "+p(d.getHours())+":"+p(d.getMinutes())+(VW?" · ⚠ สคริปต์เป็นเวอร์ชันเก่า":"");render();return fetch(API+"?token="+encodeURIComponent(TOKEN)+"&what=log").then(r=>r.json()).then(k=>{if(k.ok){logs=k.rows.map(fix).sort((a,b)=>String(b.logAt).localeCompare(String(a.logAt)));render()}})}).catch(e=>{$("mode").textContent="เชื่อมต่อไม่สำเร็จ: "+(e.message==="unauthorized"?"รหัส TOKEN ไม่ถูกต้อง":e.message)})};
   const safe=p=>p.then(load).catch(e=>{load();if(e.message==="login required"){setSess("","");e=new Error("เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่")}throw e});
   col={
     add:r=>{r.id="t"+Date.now()+Math.random().toString(36).slice(2,5);recs.push(Object.assign({},r));render();return safe(post({action:"add",row:r}))},
@@ -317,7 +317,7 @@ $("fr").addEventListener("click",()=>{Object.keys(F).forEach(k=>F[k]="");documen
   $("cn").addEventListener("click",()=>cm(false));
   $("cb").addEventListener("click",()=>{const why=$("cr").value.trim();if(!why){$("ce").textContent="กรุณาระบุเหตุผล";return}cm(false);col.doc(cid).cancel(why).then(()=>msg("ยกเลิกรายการแล้ว และบันทึกลง log")).catch(err=>msg("ยกเลิกไม่สำเร็จ: "+((err&&err.message)||err)))});
   if(TOKEN.indexOf("ใส่รหัส")===0){$("mode").textContent="ยังไม่ได้ตั้งค่า TOKEN ในไฟล์ index.html";return}
-  load();setInterval(load,30000);
+  fetch(API+"?token="+encodeURIComponent(TOKEN)+"&what=ver").then(r=>r.json()).then(j=>{VW=j.ver!=="admin-v3";if(VW)msg("⚠ สคริปต์บน Google ยังเป็นเวอร์ชันเก่า (ยังไม่เก็บเลข commit) วางโค้ด Code.gs ล่าสุด กด Save แล้ว Deploy เป็น New version")}).catch(()=>{}).then(()=>{load();setInterval(load,30000)});
 })();
 render();
 </script>
